@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class Settings(BaseSettings):
     #Core Settings
     PROJECT_NAME: str ="OnTheBlock"
@@ -29,11 +30,13 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         #
+        
         env_prefix="OTB_",
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
         case_sensitive=True
+        d
     )
 
-    settings = Settings()
+settings = Settings()
