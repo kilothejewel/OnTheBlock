@@ -120,12 +120,14 @@ h1, h2, h3, h4 {
 .text-gradient-primary {
   background: linear-gradient(135deg, var(--text-primary) 30%, var(--text-secondary));
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .text-gradient-neon {
   background: linear-gradient(135deg, #a5b4fc, #ec4899, #14b8a6);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
