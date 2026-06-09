@@ -15,7 +15,13 @@
     "**/.venv"
   ],
   "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+  "python.interpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
   "python.analysis.extraPaths": [
-    "${workspaceFolder}/.venv/Lib/site-packages"
+    "c:/Users/jomar/OneDrive/Desktop/Projects/OnTheBlock/.venv/Lib/site-packages",
+    "./.venv/Lib/site-packages"
+  ],
+  "python.autoComplete.extraPaths": [
+    "c:/Users/jomar/OneDrive/Desktop/Projects/OnTheBlock/.venv/Lib/site-packages",
+    "./.venv/Lib/site-packages"
   ]
 }
