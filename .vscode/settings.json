@@ -14,14 +14,13 @@
   "python.analysis.exclude": [
     "**/.venv"
   ],
-  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
-  "python.interpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+  "python.defaultInterpreterPath": "c:\\Users\\jomar\\OneDrive\\Desktop\\Projects\\OnTheBlock\\.venv\\Scripts\\python.exe",
+  "python.interpreterPath": "c:\\Users\\jomar\\OneDrive\\Desktop\\Projects\\OnTheBlock\\.venv\\Scripts\\python.exe",
+  "python.pythonPath": "c:\\Users\\jomar\\OneDrive\\Desktop\\Projects\\OnTheBlock\\.venv\\Scripts\\python.exe",
   "python.analysis.extraPaths": [
-    "c:/Users/jomar/OneDrive/Desktop/Projects/OnTheBlock/.venv/Lib/site-packages",
-    "./.venv/Lib/site-packages"
+    "c:\\Users\\jomar\\OneDrive\\Desktop\\Projects\\OnTheBlock\\.venv\\Lib\\site-packages"
   ],
   "python.autoComplete.extraPaths": [
-    "c:/Users/jomar/OneDrive/Desktop/Projects/OnTheBlock/.venv/Lib/site-packages",
-    "./.venv/Lib/site-packages"
+    "c:\\Users\\jomar\\OneDrive\\Desktop\\Projects\\OnTheBlock\\.venv\\Lib\\site-packages"
   ]
 }
