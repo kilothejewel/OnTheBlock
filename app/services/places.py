@@ -262,14 +262,15 @@ class GooglePlacesService:
         }
         price_level = price_level_map.get(budget, 2)
 
+        # Placeholder coordinates for mock/no-API-key mode only; not reflective of the actual destination.
         return [
             {
                 "google_place_id": f"mock_{cat_slug}_1",
                 "name": f"{cat_title} Spot 1",
                 "rating": 4.8,
                 "address": f"101 Main St, {destination}",
-                "latitude": 0.0,
-                "longitude": 0.0,
+                "latitude": 40.7128,
+                "longitude": -74.0060,
                 "price_level": price_level,
                 "types": f"{category.lower()}, point_of_interest, establishment"
             },
@@ -278,8 +279,8 @@ class GooglePlacesService:
                 "name": f"{cat_title} Spot 2",
                 "rating": 4.6,
                 "address": f"202 Market St, {destination}",
-                "latitude": 0.0,
-                "longitude": 0.0,
+                "latitude": 40.7145,
+                "longitude": -74.0042,
                 "price_level": price_level,
                 "types": f"{category.lower()}, point_of_interest, establishment"
             },
@@ -288,8 +289,8 @@ class GooglePlacesService:
                 "name": f"{cat_title} Spot 3",
                 "rating": 4.5,
                 "address": f"303 Grand Ave, {destination}",
-                "latitude": 0.0,
-                "longitude": 0.0,
+                "latitude": 40.7112,
+                "longitude": -74.0083,
                 "price_level": price_level,
                 "types": f"{category.lower()}, point_of_interest, establishment"
             }
