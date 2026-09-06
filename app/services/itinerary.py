@@ -3,6 +3,7 @@ from typing import Dict, Any, List, Optional
 from openai import OpenAI
 from app.core.config import settings
 from app.schemas.itinerary import ItineraryGenerate
+from app.services.places import places_service
 
 class ItineraryService:
     def __init__(self):
@@ -14,11 +15,45 @@ class ItineraryService:
 
     async def generate_itinerary(self, params: ItineraryGenerate) -> Dict[str, Any]:
         """
-        Generate a budget-based itinerary using OpenAI GPT-4o-mini.
+        Generate a budget-based itinerary using OpenAI GPT-4o-mini grounded in real Google Places candidates.
         """
         # Fallback to mock generation if OpenAI client is not initialized
         if not self.client:
             return self._get_mock_itinerary(params)
+
+        # Check preferences for nightlife/bars/clubs keywords
+        pref_lower = (params.preferences or "").lower()
+        include_nightlife = any(kw in pref_lower for kw in ["nightlife", "bar", "club", "party"])
+
+        categories = ["breakfast", "lunch", "dinner"]
+        if include_nightlife:
+            categories.append("nightlife")
+
+        # Fetch candidate places for each day and slot
+        candidates_by_day: Dict[str, Dict[str, List[Dict[str, Any]]]] = {}
+        for day in range(1, params.duration_days + 1):
+            day_candidates: Dict[str, List[Dict[str, Any]]] = {}
+            for category in categories:
+                try:
+                    places = await places_service.search_places_for_slot(
+                        params.destination, category, params.budget, max_results=4
+                    )
+                    day_candidates[category] = [
+                        {
+                            "google_place_id": p.get("google_place_id"),
+                            "name": p.get("name"),
+                            "rating": p.get("rating"),
+                            "address": p.get("address"),
+                            "price_level": p.get("price_level")
+                        }
+                        for p in (places or [])
+                    ]
+                except Exception as e:
+                    print(f"Error fetching {category} candidates for day {day}: {e}")
+                    day_candidates[category] = []
+            candidates_by_day[f"day_{day}"] = day_candidates
+
+        candidates_json = json.dumps(candidates_by_day, indent=2)
 
         prompt = f"""
         Generate a travel itinerary based on the following preferences:
@@ -27,11 +62,22 @@ class ItineraryService:
         - Duration: {params.duration_days} day(s)
         - Special Preferences/Vibes: {params.preferences or 'None specified'}
 
+        Candidate Places to Choose From (by day and slot):
+        {candidates_json}
+
         The itinerary must be realistic and strictly respect the budget. Specify reasonable estimated costs in USD for each item.
         """
 
         system_instruction = """
         You are an expert travel planner. You generate highly engaging, customized, and budget-appropriate itineraries.
+
+        GROUNDING RULES FOR PLACES AND ACTIVITIES:
+        - You are provided with a verified candidate list of real places organized by day and time slot.
+        - For venue-based activities, you must ONLY select places from the provided candidate list for each slot.
+        - When choosing a place from the candidate list, you MUST use the exact google_place_id provided (never invented, never null).
+        - If you want to add a non-place activity with no candidate (e.g. "walk along the river", "stroll along the beach"), you should set google_place_id to null ONLY in that specific case and clearly indicate location as a general area rather than a specific business.
+        - If a slot has an empty candidate list, you may suggest a generic activity with google_place_id set to null.
+
         You must return your response as a JSON object matching this schema:
         {
             "title": "A fun and catchy title for the itinerary",
@@ -46,7 +92,7 @@ class ItineraryService:
                     "description": "Short, engaging description of what to do there, matching the requested vibe.",
                     "estimated_cost": 25, // integer estimation in USD
                     "location": "Name of the place or landmark",
-                    "google_place_id": null // always null unless you are absolutely sure of a specific well-known place ID
+                    "google_place_id": "Exact google_place_id from candidate list, or null for general activities"
                 }
             ]
         }
