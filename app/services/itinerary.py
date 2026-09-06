@@ -111,11 +111,66 @@ class ItineraryService:
             
             content = response.choices[0].message.content
             itinerary_data = json.loads(content)
+
+            # Build candidate lookup mapping google_place_id -> candidate dict
+            candidate_lookup: Dict[str, Dict[str, Any]] = {}
+            for day_slots in candidates_by_day.values():
+                for slot_places in day_slots.values():
+                    for candidate in slot_places:
+                        place_id = candidate.get("google_place_id")
+                        if place_id:
+                            candidate_lookup[place_id] = candidate
+
+            # Validate and enrich items before returning
+            itinerary_data["items"] = self._validate_and_enrich_items(
+                itinerary_data.get("items", []), candidate_lookup
+            )
             return itinerary_data
 
         except Exception as e:
             print(f"Error calling OpenAI API: {e}")
             return self._get_mock_itinerary(params)
+
+    def _validate_and_enrich_items(
+        self,
+        items: List[Dict[str, Any]],
+        candidate_lookup: Dict[str, Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        Validate itinerary items against verified candidates and enrich with metadata.
+        - If google_place_id is None, leaves item unchanged with verified=False.
+        - If google_place_id is present and in candidate_lookup, sets verified=True and adds address.
+        - If google_place_id is present but not in candidate_lookup, sets google_place_id=None,
+          verified=False, prepends '[Unverified] ' to location, and prints a warning.
+        Every item ends up with a boolean verified field.
+        """
+        validated_items = []
+        for item in items:
+            enriched_item = dict(item)
+            place_id = item.get("google_place_id")
+
+            if place_id is None:
+                # Valid generic activity with no place ID
+                enriched_item["verified"] = False
+            elif place_id in candidate_lookup:
+                # Verified candidate place
+                matched_candidate = candidate_lookup[place_id]
+                enriched_item["verified"] = True
+                enriched_item["address"] = matched_candidate.get("address")
+            else:
+                # Place ID not found in candidate lookup (hallucinated or misused ID)
+                print(
+                    f"Warning: Invalid place_id '{place_id}' for activity '{item.get('activity')}' "
+                    f"not found in candidate places."
+                )
+                enriched_item["google_place_id"] = None
+                enriched_item["verified"] = False
+                orig_location = item.get("location") or ""
+                enriched_item["location"] = f"[Unverified] {orig_location}"
+
+            validated_items.append(enriched_item)
+
+        return validated_items
 
     def _get_mock_itinerary(self, params: ItineraryGenerate) -> Dict[str, Any]:
         """Fallback mock itinerary generator when OpenAI key is missing."""
