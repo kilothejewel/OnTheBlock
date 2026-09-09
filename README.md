@@ -14,11 +14,15 @@
 The project allows for code sharing and a unified backend API.
 
 ### **Core Stack**
-- **Web App**: [Next.js](https://nextjs.org/) (React) - The main platform and API backend.
-- **Chrome Extension**: [Vite](https://vitejs.dev/) + React - A lightweight companion for browsing context.
-- **Backend/API**: Next.js API Routes (Serverless).
-- **Database Description**: [Supabase](https://supabase.com/) (PostgreSQL) for Auth, User Data, and "Hotspots".
-- **Styling**: Vanilla CSS / CSS Modules for a custom, premium feel.
+- **Web App**: [Vite](https://vitejs.dev/) + React - the main platform UI (`web/`).
+- **Backend/API**: [FastAPI](https://fastapi.tiangolo.com/) + [SQLAlchemy](https://www.sqlalchemy.org/) (`app/`).
+- **Database**: PostgreSQL, accessed directly via SQLAlchemy / psycopg2 (SQLite is
+  supported for local dev and tests via `OTB_DATABASE_URL`).
+- **Auth**: Custom email/username + password authentication. Passwords are hashed
+  with bcrypt (passlib) and sessions use signed JWT bearer tokens (python-jose).
+- **Rate limiting**: slowapi, with stricter per-route limits on the OpenAI /
+  Google Places-backed endpoints.
+- **Styling**: Vanilla CSS for a custom, premium feel.
 
 ### **Data Source**
 - **Google Places API**: For retrieving up-to-date information on places, ratings, and trends.
@@ -26,20 +30,25 @@ The project allows for code sharing and a unified backend API.
 ### **Structure**
 ```text
 OnTheBlock/
-├── web/              # Main Web App + API Backend (Next.js)
-│   └── src/app/api/  # Centralized API endpoints for Web & Apps
-├── extension/        # Chrome Extension (Vite + React)
+├── app/              # FastAPI backend
+│   ├── core/         # config, database, security (JWT), rate limiting
+│   ├── models/       # SQLAlchemy models
+│   ├── routers/      # auth, hotspots, itineraries
+│   └── services/     # Google Places + OpenAI itinerary generation
+├── tests/            # pytest suite (in-memory SQLite, mocked externals)
+├── web/              # Vite + React web app
 └── README.md
 ```
 
 ## 📱 Mobile Strategy (Future)
-The architecture is designed "API-First". The Next.js backend will serve as the central brain. Future mobile apps (React Native) will consume the same API endpoints used by the Web App and Chrome Extension, ensuring data consistency and centralized logic.
+The architecture is designed "API-First". The FastAPI backend is the central brain. Future mobile apps (React Native) will consume the same API endpoints used by the web app, ensuring data consistency and centralized logic.
 
 ## 🛠️ Getting Started
 
 ### Prerequisites
-- Node.js (v18+)
-- npm / yarn / pnpm
+- Python 3.11+
+- Node.js (v18+) and npm
+- PostgreSQL (or use SQLite locally via `OTB_DATABASE_URL`)
 
 ### Setup
 1. **Clone the repository**:
@@ -48,17 +57,23 @@ The architecture is designed "API-First". The Next.js backend will serve as the 
    cd OnTheBlock
    ```
 
-2. **Web App**:
+2. **Backend (FastAPI)**:
+   ```bash
+   python -m venv .venv && source .venv/Scripts/activate  # or .venv/bin/activate
+   pip install -r requirements.txt
+   cp .env.template .env    # then fill in OTB_SECRET_KEY, OTB_OPENAI_API_KEY, etc.
+   uvicorn app.main:app --reload
+   ```
+
+3. **Web App**:
    ```bash
    cd web
    npm install
+   cp .env.example .env     # adjust VITE_API_BASE if the API is not on :8000
    npm run dev
    ```
 
-3. **Chrome Extension**:
+4. **Tests**:
    ```bash
-   cd extension
-   npm install
-   npm run build
-   # Load the 'dist' folder as an unpacked extension in Chrome
+   pytest
    ```

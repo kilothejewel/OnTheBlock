@@ -30,10 +30,11 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
-# Configure CORS to allow API access from the Chrome extension and React web frontend
+# Configure CORS. Origins are read from the OTB_FRONTEND_ORIGINS setting
+# (comma-separated); defaults to the local Vite dev server.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For portfolio demo purposes, allow all origins.
+    allow_origins=settings.frontend_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

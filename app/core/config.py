@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -19,10 +19,6 @@ class Settings(BaseSettings):
     # POSTGRES_* components above -- useful for SQLite in local dev / tests.
     DATABASE_URL: Optional[str] = None
 
-    #Supabase Settings
-    SUPABASE_URL: str
-    SUPABASE_KEY: str
-
     #OpenAI Settings
     OPENAI_API_KEY: str
 
@@ -33,6 +29,15 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
+
+    #CORS Settings
+    # Comma-separated list of origins allowed to call the API from a browser.
+    FRONTEND_ORIGINS: str = "http://localhost:5173"
+
+    @property
+    def frontend_origins(self) -> List[str]:
+        """FRONTEND_ORIGINS parsed into a list of individual origins."""
+        return [o.strip() for o in self.FRONTEND_ORIGINS.split(",") if o.strip()]
 
     @model_validator(mode="after")
     def _assemble_database_url(self) -> "Settings":

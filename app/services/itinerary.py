@@ -1,3 +1,4 @@
+import asyncio
 import json
 from typing import Dict, Any, List, Optional
 from openai import OpenAI
@@ -29,28 +30,58 @@ class ItineraryService:
         if include_nightlife:
             categories.append("nightlife")
 
-        # Fetch candidate places for each day and slot
+        # Fetch candidate places for each day and slot.
+        # Days are processed in order so places already used on an earlier day can
+        # be excluded from later days (cross-day variety); within a single day the
+        # per-category Places lookups run concurrently to cut total latency.
+        slots_per_category = 4
         candidates_by_day: Dict[str, Dict[str, List[Dict[str, Any]]]] = {}
+        used_place_ids: set[str] = set()
         for day in range(1, params.duration_days + 1):
-            day_candidates: Dict[str, List[Dict[str, Any]]] = {}
-            for category in categories:
-                try:
-                    places = await places_service.search_places_for_slot(
-                        params.destination, category, params.budget, max_results=4
+            results = await asyncio.gather(
+                *(
+                    places_service.search_places_for_slot(
+                        params.destination,
+                        category,
+                        params.budget,
+                        # Over-fetch so enough candidates survive de-duplication.
+                        max_results=slots_per_category + len(used_place_ids),
                     )
-                    day_candidates[category] = [
+                    for category in categories
+                ),
+                return_exceptions=True,
+            )
+
+            day_candidates: Dict[str, List[Dict[str, Any]]] = {}
+            for category, places in zip(categories, results):
+                if isinstance(places, Exception):
+                    print(f"Error fetching {category} candidates for day {day}: {places}")
+                    day_candidates[category] = []
+                    continue
+
+                slot: List[Dict[str, Any]] = []
+                for p in places or []:
+                    place_id = p.get("google_place_id")
+                    if place_id and place_id in used_place_ids:
+                        continue  # already featured on an earlier day
+                    slot.append(
                         {
-                            "google_place_id": p.get("google_place_id"),
+                            "google_place_id": place_id,
                             "name": p.get("name"),
                             "rating": p.get("rating"),
                             "address": p.get("address"),
-                            "price_level": p.get("price_level")
+                            "price_level": p.get("price_level"),
                         }
-                        for p in (places or [])
-                    ]
-                except Exception as e:
-                    print(f"Error fetching {category} candidates for day {day}: {e}")
-                    day_candidates[category] = []
+                    )
+                    if len(slot) >= slots_per_category:
+                        break
+                day_candidates[category] = slot
+
+            # Record this day's candidate ids so later days draw from fresh places.
+            for slot in day_candidates.values():
+                for candidate in slot:
+                    if candidate["google_place_id"]:
+                        used_place_ids.add(candidate["google_place_id"])
             candidates_by_day[f"day_{day}"] = day_candidates
 
         candidates_json = json.dumps(candidates_by_day, indent=2)

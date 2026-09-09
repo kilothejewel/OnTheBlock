@@ -6,10 +6,12 @@ here so the real grounding/validation logic in ItineraryService runs against
 deterministic inputs without any network calls.
 """
 
+import asyncio
 import json
 
 import pytest
 
+from app.schemas.itinerary import ItineraryGenerate
 from app.services import itinerary as itinerary_module
 
 CANDIDATE = {
@@ -128,6 +130,58 @@ def test_validate_and_enrich_marks_verified_and_unverified():
     # no place_id -> left as a generic activity, unverified
     assert enriched[2]["verified"] is False
     assert enriched[2]["google_place_id"] is None
+
+
+def test_cross_day_candidates_do_not_repeat(monkeypatch):
+    """Places featured on day 1 must be excluded from day 2's candidate lists."""
+    pool = [
+        {"google_place_id": f"p{i}", "name": f"Place {i}", "rating": 4.0,
+         "address": f"{i} St", "price_level": 2}
+        for i in range(10)
+    ]
+
+    async def fake_search(destination, category, budget, max_results=5):
+        return pool[:max_results]
+
+    monkeypatch.setattr(
+        itinerary_module.places_service, "search_places_for_slot", fake_search
+    )
+
+    captured = {}
+
+    class _CapturingOpenAI:
+        def __init__(self):
+            outer = captured
+
+            class _Completions:
+                def create(self, *args, **kwargs):
+                    outer["prompt"] = kwargs["messages"][1]["content"]
+                    content = json.dumps(
+                        {"title": "t", "destination": "d", "budget": "$$",
+                         "duration_days": 2, "items": []}
+                    )
+                    message = type("Msg", (), {"content": content})
+                    choice = type("Choice", (), {"message": message})
+                    return type("Resp", (), {"choices": [choice]})
+
+            self.chat = type("Chat", (), {"completions": _Completions()})
+
+    monkeypatch.setattr(itinerary_module.itinerary_service, "client", _CapturingOpenAI())
+
+    asyncio.run(
+        itinerary_module.itinerary_service.generate_itinerary(
+            ItineraryGenerate(destination="Testville", budget="$$", duration_days=2)
+        )
+    )
+
+    prompt = captured["prompt"]
+    json_start = prompt.index("{", prompt.index("Candidate Places to Choose From"))
+    candidates, _ = json.JSONDecoder().raw_decode(prompt[json_start:])
+    day1_ids = {c["google_place_id"] for slot in candidates["day_1"].values() for c in slot}
+    day2_ids = {c["google_place_id"] for slot in candidates["day_2"].values() for c in slot}
+    assert day1_ids
+    assert day2_ids
+    assert day1_ids.isdisjoint(day2_ids)
 
 
 def test_generate_itinerary_requires_auth(client):

@@ -14,7 +14,7 @@ import {
   ListFilter
 } from 'lucide-react';
 
-const API_BASE = "http://localhost:8000/api/v1";
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000/api/v1";
 
 // Helper functions for creating mock data to satisfy linter/compiler purity checks
 const createMockSavedHotspot = (place) => ({
@@ -34,7 +34,10 @@ export default function App() {
   // Authentication State
   const [username, setUsername] = useState(localStorage.getItem('otb_username') || '');
   const [token, setToken] = useState(localStorage.getItem('otb_token') || '');
-  const [tempUsername, setTempUsername] = useState('');
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
+  const [authForm, setAuthForm] = useState({ identifier: '', email: '', username: '', password: '' });
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
   
   // Navigation State
   const [activeTab, setActiveTab] = useState('discover'); // 'discover' | 'planner' | 'dashboard'
@@ -65,20 +68,79 @@ export default function App() {
     setTimeout(() => setNotification(null), 4000);
   };
 
-  // Handle User Login
-  const handleLogin = (e) => {
+  // Persist an authenticated session (real JWT from the backend)
+  const establishSession = (jwt, name) => {
+    localStorage.setItem('otb_token', jwt);
+    localStorage.setItem('otb_username', name);
+    setToken(jwt);
+    setUsername(name);
+  };
+
+  // Handle login / registration against the real auth endpoints
+  const handleAuthSubmit = async (e) => {
     e.preventDefault();
-    if (!tempUsername.trim()) return;
-    
-    const formattedUsername = tempUsername.trim().toLowerCase();
-    const mockToken = `mock_token_${formattedUsername}`;
-    
-    localStorage.setItem('otb_username', formattedUsername);
-    localStorage.setItem('otb_token', mockToken);
-    
-    setUsername(formattedUsername);
-    setToken(mockToken);
-    showNotification(`Welcome back, ${formattedUsername}!`, 'success');
+    setAuthError('');
+
+    const isRegister = authMode === 'register';
+    const endpoint = isRegister ? '/auth/register' : '/auth/login';
+    const payload = isRegister
+      ? {
+          email: authForm.email.trim(),
+          username: authForm.username.trim(),
+          password: authForm.password,
+        }
+      : { identifier: authForm.identifier.trim(), password: authForm.password };
+
+    if (isRegister && (!payload.email || !payload.username || !payload.password)) {
+      setAuthError('Email, username, and password are all required.');
+      return;
+    }
+    if (!isRegister && (!payload.identifier || !payload.password)) {
+      setAuthError('Enter your email/username and password.');
+      return;
+    }
+
+    setAuthLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setAuthError(data.detail || `Authentication failed (${res.status}).`);
+        return;
+      }
+
+      const jwt = data.access_token;
+      // Resolve the canonical username/profile from the backend.
+      let name = isRegister ? payload.username : payload.identifier;
+      try {
+        const meRes = await fetch(`${API_BASE}/auth/me`, {
+          headers: { Authorization: `Bearer ${jwt}` },
+        });
+        if (meRes.ok) {
+          const me = await meRes.json();
+          name = me.username || name;
+        }
+      } catch {
+        // non-fatal: fall back to the value entered
+      }
+
+      establishSession(jwt, name);
+      setAuthForm({ identifier: '', email: '', username: '', password: '' });
+      showNotification(
+        isRegister ? `Welcome to OnTheBlock, ${name}!` : `Welcome back, ${name}!`,
+        'success'
+      );
+    } catch (err) {
+      console.error('Auth error:', err);
+      setAuthError('Could not reach the server. Is the API running?');
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
   // Handle Logout
@@ -312,29 +374,114 @@ export default function App() {
           </div>
           <h1 className="text-gradient-neon" style={{ fontSize: '2.5rem', marginBottom: '10px' }}>OnTheBlock</h1>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '30px' }}>Discover local hotspots and design AI-curated travel itineraries tailored to your budget.</p>
-          
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px', textAlign: 'left' }}>
+
+          {/* Login / Register toggle */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '10px' }}>
+            {['login', 'register'].map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => { setAuthMode(mode); setAuthError(''); }}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontWeight: '700',
+                  textTransform: 'capitalize',
+                  background: authMode === mode ? 'rgba(99, 102, 241, 0.25)' : 'transparent',
+                  color: authMode === mode ? '#a5b4fc' : 'var(--text-secondary)',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {mode === 'login' ? 'Log in' : 'Sign up'}
+              </button>
+            ))}
+          </div>
+
+          <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
+            {authMode === 'login' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)' }}>Email or username</label>
+                <input
+                  type="text"
+                  autoComplete="username"
+                  placeholder="you@example.com"
+                  value={authForm.identifier}
+                  onChange={(e) => setAuthForm((f) => ({ ...f, identifier: e.target.value }))}
+                  required
+                  style={{ width: '100%' }}
+                />
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)' }}>Email</label>
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    value={authForm.email}
+                    onChange={(e) => setAuthForm((f) => ({ ...f, email: e.target.value }))}
+                    required
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)' }}>Username</label>
+                  <input
+                    type="text"
+                    autoComplete="username"
+                    placeholder="At least 3 characters"
+                    value={authForm.username}
+                    onChange={(e) => setAuthForm((f) => ({ ...f, username: e.target.value }))}
+                    required
+                    minLength={3}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              </>
+            )}
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)' }}>Portfolio Demo Access</label>
-              <input 
-                type="text" 
-                placeholder="Enter a username (e.g. guest)" 
-                value={tempUsername} 
-                onChange={(e) => setTempUsername(e.target.value)}
+              <label style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)' }}>Password</label>
+              <input
+                type="password"
+                autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
+                placeholder={authMode === 'login' ? 'Your password' : 'At least 8 characters'}
+                value={authForm.password}
+                onChange={(e) => setAuthForm((f) => ({ ...f, password: e.target.value }))}
                 required
+                minLength={authMode === 'login' ? undefined : 8}
                 style={{ width: '100%' }}
               />
             </div>
-            
-            <button type="submit" className="btn-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '14px' }}>
-              Start Exploring <ChevronRight size={18} />
+
+            {authError && (
+              <p style={{ fontSize: '0.8rem', color: 'var(--error, #ef4444)', margin: 0 }}>{authError}</p>
+            )}
+
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={authLoading}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '14px' }}
+            >
+              {authLoading
+                ? 'Please wait…'
+                : (
+                  <>
+                    {authMode === 'login' ? 'Log in' : 'Create account'} <ChevronRight size={18} />
+                  </>
+                )}
             </button>
           </form>
-          
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '30px', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
             <Info size={28} color="#14b8a6" />
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'left' }}>
-              This demo communicates with the FastAPI backend, dynamically registers your username, and persists database queries in PostgreSQL.
+              Accounts are real: the FastAPI backend hashes your password with bcrypt and issues a signed JWT that this app stores locally for API requests.
             </p>
           </div>
         </div>
@@ -903,7 +1050,7 @@ export default function App() {
 
       {/* Footer */}
       <footer style={{ padding: '20px', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.03)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-        OnTheBlock © 2026. Made with FastAPI, SQLAlchemy, Supabase, and OpenAI GPT-4o-mini.
+        OnTheBlock © 2026. Made with FastAPI, SQLAlchemy, PostgreSQL, and OpenAI GPT-4o-mini.
       </footer>
     </div>
   );
