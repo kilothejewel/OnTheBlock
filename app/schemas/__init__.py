@@ -1,5 +1,6 @@
 from app.schemas.hotspot import HotspotBase, HotspotCreate, HotspotResponse
 from app.schemas.itinerary import ItineraryBase, ItineraryCreate, ItineraryResponse, ItineraryGenerate
+from app.schemas.user import Token, UserCreate, UserLogin, UserResponse
 
 __all__ = [
     "HotspotBase",
@@ -8,5 +9,9 @@ __all__ = [
     "ItineraryBase",
     "ItineraryCreate",
     "ItineraryResponse",
-    "ItineraryGenerate"
+    "ItineraryGenerate",
+    "Token",
+    "UserCreate",
+    "UserLogin",
+    "UserResponse",
 ]

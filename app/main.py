@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine
 from app.models import Base
+from app.routers.auth import router as auth_router
 from app.routers.hotspots import router as hotspots_router
 from app.routers.itineraries import router as itineraries_router
 
@@ -30,6 +31,7 @@ app.add_middleware(
 )
 
 # Include API Routers
+app.include_router(auth_router, prefix=settings.API_V1_STR)
 app.include_router(hotspots_router, prefix=settings.API_V1_STR)
 app.include_router(itineraries_router, prefix=settings.API_V1_STR)
 

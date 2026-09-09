@@ -1,72 +1,71 @@
-import base64
-import json
+from datetime import datetime, timedelta, timezone
+from typing import Optional
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 from sqlalchemy.orm import Session
+
+from app.core.config import settings
 from app.core.database import get_db
 from app.models.user import User
 
 security = HTTPBearer()
 
-def decode_token_payload(token: str) -> dict:
-    """
-    Decodes the JWT token payload without signature verification (for local development/simplicity),
-    or returns mock payload for local portfolio testing.
-    """
-    # Support mock tokens for local/demo runs
-    if token.startswith("mock_token_"):
-        user_id = token.replace("mock_token_", "")
-        return {
-            "sub": user_id,
-            "email": f"{user_id}@example.com"
-        }
-        
-    try:
-        # JWT format is header.payload.signature
-        parts = token.split(".")
-        if len(parts) != 3:
-            raise ValueError("Invalid JWT token format")
-            
-        payload_b64 = parts[1]
-        # Adjust base64 padding
-        payload_b64 += "=" * ((4 - len(payload_b64) % 4) % 4)
-        payload_bytes = base64.urlsafe_b64decode(payload_b64)
-        payload = json.loads(payload_bytes.decode("utf-8"))
-        return payload
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Could not validate credentials: {str(e)}",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def get_password_hash(password: str) -> str:
+    """Hash a plaintext password using bcrypt."""
+    return pwd_context.hash(password)
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Check a plaintext password against a stored bcrypt hash."""
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    """Create a signed JWT access token from the given claims."""
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + (
+        expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ) -> User:
     """
-    FastAPI dependency to retrieve the current user.
-    Auto-registers the user in the local database if they are authenticating for the first time.
+    FastAPI dependency that resolves the current user from a bearer JWT.
+
+    Decodes and verifies the token signature, reads the ``sub`` claim (the user id),
+    loads that user from the database, and raises 401 on any failure.
     """
-    token = credentials.credentials
-    payload = decode_token_payload(token)
-    
-    supabase_uid = payload.get("sub")
-    email = payload.get("email")
-    
-    if not supabase_uid or not email:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication token: missing sub or email",
-            headers={"WWW-Authenticate": "Bearer"},
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        payload = jwt.decode(
+            credentials.credentials,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
         )
-        
-    # Check if user exists in our local SQL database, if not, auto-sync them
-    user = db.query(User).filter(User.supabase_uid == supabase_uid).first()
-    if not user:
-        user = User(supabase_uid=supabase_uid, email=email)
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-        
+        subject = payload.get("sub")
+        if subject is None:
+            raise credentials_exception
+        user_id = int(subject)
+    except (JWTError, ValueError):
+        raise credentials_exception
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        raise credentials_exception
     return user
