@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.core.database import get_db
+from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.models.user import User
 from app.models.hotspot import Hotspot
@@ -11,12 +12,17 @@ from app.services.places import places_service
 router = APIRouter(prefix="/hotspots", tags=["hotspots"])
 
 @router.get("/recommend", response_model=List[HotspotCreate])
+@limiter.limit("20/minute")
 async def recommend_hotspots(
+    request: Request,
+    response: Response,
     query: str,
     current_user: User = Depends(get_current_user)
 ):
     """
     Search and retrieve recommended hotspots from Google Places API.
+
+    Rate limited to 20 requests/minute per client (each call hits Google Places).
     """
     try:
         places = await places_service.search_places(query)

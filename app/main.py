@@ -1,8 +1,11 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from app.core.config import settings
 from app.core.database import engine
+from app.core.rate_limit import limiter, rate_limit_exceeded_handler
 from app.models import Base
 from app.routers.auth import router as auth_router
 from app.routers.hotspots import router as hotspots_router
@@ -20,6 +23,12 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     lifespan=lifespan
 )
+
+# Rate limiting: a global default limit via SlowAPIMiddleware, stricter per-route
+# limits declared with @limiter.limit(...) on the expensive endpoints.
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # Configure CORS to allow API access from the Chrome extension and React web frontend
 app.add_middleware(
@@ -44,6 +53,7 @@ def read_root():
     }
 
 @app.get("/health")
+@limiter.exempt
 def health_check():
     return {"status": "healthy"}
 

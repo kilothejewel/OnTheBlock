@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 from typing import List, Any
 from app.core.database import get_db
+from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.models.user import User
 from app.models.itinerary import Itinerary
@@ -11,13 +12,19 @@ from app.services.itinerary import itinerary_service
 router = APIRouter(prefix="/itineraries", tags=["itineraries"])
 
 @router.post("/generate", response_model=Any)
+@limiter.limit("5/minute")
 async def generate_itinerary(
+    request: Request,
+    response: Response,
     params: ItineraryGenerate,
     current_user: User = Depends(get_current_user)
 ):
     """
     Generate an AI travel itinerary based on target destination, budget, and vibes.
     This does NOT save it to the DB immediately, allowing client previews first.
+
+    Rate limited to 5 requests/minute per client: each call fans out to OpenAI and
+    multiple Google Places lookups, making it the most expensive route in the API.
     """
     try:
         itinerary = await itinerary_service.generate_itinerary(params)
