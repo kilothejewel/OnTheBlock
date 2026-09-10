@@ -1,7 +1,7 @@
 import asyncio
 import json
 from typing import Dict, Any, List, Optional
-from openai import OpenAI
+from openai import AsyncOpenAI
 from app.core.config import settings
 from app.schemas.itinerary import ItineraryGenerate
 from app.services.places import places_service
@@ -10,13 +10,14 @@ class ItineraryService:
     def __init__(self):
         # Instantiate OpenAI client if key is set
         self.api_key = settings.OPENAI_API_KEY
+        self.model = settings.OPENAI_MODEL
         self.client = None
         if self.api_key and self.api_key != "your_openai_api_key":
-            self.client = OpenAI(api_key=self.api_key)
+            self.client = AsyncOpenAI(api_key=self.api_key)
 
     async def generate_itinerary(self, params: ItineraryGenerate) -> Dict[str, Any]:
         """
-        Generate a budget-based itinerary using OpenAI GPT-4o-mini grounded in real Google Places candidates.
+        Generate a budget-based itinerary using OpenAI (settings.OPENAI_MODEL) grounded in real Google Places candidates.
         """
         # Fallback to mock generation if OpenAI client is not initialized
         if not self.client:
@@ -44,8 +45,12 @@ class ItineraryService:
                         params.destination,
                         category,
                         params.budget,
-                        # Over-fetch so enough candidates survive de-duplication.
-                        max_results=slots_per_category + len(used_place_ids),
+                        # Over-fetch so enough candidates survive de-duplication
+                        # against both earlier days and earlier slots of this day.
+                        max_results=(
+                            slots_per_category * (len(categories) + 1)
+                            + len(used_place_ids)
+                        ),
                     )
                     for category in categories
                 ),
@@ -53,6 +58,9 @@ class ItineraryService:
             )
 
             day_candidates: Dict[str, List[Dict[str, Any]]] = {}
+            # Ids already assigned to an earlier slot on this same day, so a venue
+            # is never offered for both e.g. breakfast and lunch.
+            day_used_ids: set[str] = set()
             for category, places in zip(categories, results):
                 if isinstance(places, Exception):
                     print(f"Error fetching {category} candidates for day {day}: {places}")
@@ -62,8 +70,8 @@ class ItineraryService:
                 slot: List[Dict[str, Any]] = []
                 for p in places or []:
                     place_id = p.get("google_place_id")
-                    if place_id and place_id in used_place_ids:
-                        continue  # already featured on an earlier day
+                    if place_id and (place_id in used_place_ids or place_id in day_used_ids):
+                        continue  # already featured on an earlier day or slot
                     slot.append(
                         {
                             "google_place_id": place_id,
@@ -71,17 +79,18 @@ class ItineraryService:
                             "rating": p.get("rating"),
                             "address": p.get("address"),
                             "price_level": p.get("price_level"),
+                            "latitude": p.get("latitude"),
+                            "longitude": p.get("longitude"),
                         }
                     )
+                    if place_id:
+                        day_used_ids.add(place_id)
                     if len(slot) >= slots_per_category:
                         break
                 day_candidates[category] = slot
 
             # Record this day's candidate ids so later days draw from fresh places.
-            for slot in day_candidates.values():
-                for candidate in slot:
-                    if candidate["google_place_id"]:
-                        used_place_ids.add(candidate["google_place_id"])
+            used_place_ids.update(day_used_ids)
             candidates_by_day[f"day_{day}"] = day_candidates
 
         candidates_json = json.dumps(candidates_by_day, indent=2)
@@ -130,8 +139,8 @@ class ItineraryService:
         """
 
         try:
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
+            response = await self.client.chat.completions.create(
+                model=self.model,
                 messages=[
                     {"role": "system", "content": system_instruction},
                     {"role": "user", "content": prompt}
@@ -170,7 +179,8 @@ class ItineraryService:
         """
         Validate itinerary items against verified candidates and enrich with metadata.
         - If google_place_id is None, leaves item unchanged with verified=False.
-        - If google_place_id is present and in candidate_lookup, sets verified=True and adds address.
+        - If google_place_id is present and in candidate_lookup, sets verified=True and adds
+          address plus latitude/longitude from the matched candidate.
         - If google_place_id is present but not in candidate_lookup, sets google_place_id=None,
           verified=False, prepends '[Unverified] ' to location, and prints a warning.
         Every item ends up with a boolean verified field.
@@ -188,6 +198,8 @@ class ItineraryService:
                 matched_candidate = candidate_lookup[place_id]
                 enriched_item["verified"] = True
                 enriched_item["address"] = matched_candidate.get("address")
+                enriched_item["latitude"] = matched_candidate.get("latitude")
+                enriched_item["longitude"] = matched_candidate.get("longitude")
             else:
                 # Place ID not found in candidate lookup (hallucinated or misused ID)
                 print(

@@ -21,6 +21,7 @@ class Settings(BaseSettings):
 
     #OpenAI Settings
     OPENAI_API_KEY: str
+    OPENAI_MODEL: str = "gpt-4o-mini"
 
     #Google Places Settings
     GOOGLE_PLACES_API_KEY: str

@@ -20,6 +20,8 @@ CANDIDATE = {
     "rating": 4.5,
     "address": "1 Test St, Testville",
     "price_level": 2,
+    "latitude": 40.7128,
+    "longitude": -74.0060,
 }
 
 
@@ -30,7 +32,7 @@ class _FakeOpenAI:
         payload = content
 
         class _Completions:
-            def create(self, *args, **kwargs):
+            async def create(self, *args, **kwargs):
                 message = type("Msg", (), {"content": payload})
                 choice = type("Choice", (), {"message": message})
                 return type("Resp", (), {"choices": [choice]})
@@ -98,6 +100,8 @@ def test_generate_itinerary_is_grounded_in_candidates(
     assert verified["google_place_id"] == "place_abc"
     assert verified["verified"] is True
     assert verified["address"] == CANDIDATE["address"]
+    assert verified["latitude"] == CANDIDATE["latitude"]
+    assert verified["longitude"] == CANDIDATE["longitude"]
 
     generic = data["items"][1]
     assert generic["google_place_id"] is None
@@ -134,10 +138,12 @@ def test_validate_and_enrich_marks_verified_and_unverified():
 
 def test_cross_day_candidates_do_not_repeat(monkeypatch):
     """Places featured on day 1 must be excluded from day 2's candidate lists."""
+    # Large enough that day 1's slots (with within-day de-dup) don't exhaust it
+    # and day 2 still has fresh candidates to draw from.
     pool = [
         {"google_place_id": f"p{i}", "name": f"Place {i}", "rating": 4.0,
          "address": f"{i} St", "price_level": 2}
-        for i in range(10)
+        for i in range(40)
     ]
 
     async def fake_search(destination, category, budget, max_results=5):
@@ -154,7 +160,7 @@ def test_cross_day_candidates_do_not_repeat(monkeypatch):
             outer = captured
 
             class _Completions:
-                def create(self, *args, **kwargs):
+                async def create(self, *args, **kwargs):
                     outer["prompt"] = kwargs["messages"][1]["content"]
                     content = json.dumps(
                         {"title": "t", "destination": "d", "budget": "$$",
@@ -182,6 +188,15 @@ def test_cross_day_candidates_do_not_repeat(monkeypatch):
     assert day1_ids
     assert day2_ids
     assert day1_ids.isdisjoint(day2_ids)
+
+    # Within a single day, no venue is offered for more than one slot.
+    for day_key in ("day_1", "day_2"):
+        slot_ids = [
+            c["google_place_id"]
+            for slot in candidates[day_key].values()
+            for c in slot
+        ]
+        assert len(slot_ids) == len(set(slot_ids)), f"{day_key} has a repeated venue"
 
 
 def test_generate_itinerary_requires_auth(client):
