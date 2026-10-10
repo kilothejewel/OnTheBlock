@@ -1,18 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ArrowLeft, BadgeCheck, CalendarDays, Check, ChevronDown, ChevronUp, Heart, LoaderCircle,
+  ArrowLeft, BadgeCheck, CalendarDays, Check, ChevronDown, ChevronUp, Heart, Info, LoaderCircle,
   MapPin, Navigation, Pencil, Plus, RefreshCw, Trash2, X,
 } from 'lucide-react';
 import PlacePhoto from './PlacePhoto';
 import { CATEGORY_ICONS } from '../lib/categoryIcons';
 import {
-  BUDGET_LABELS, PERIODS, buildDays, cleanLocation, costLabel, mapsUrl, money, placeCategory, stopCategory,
+  BUDGET_LABELS, PERIODS, buildDays, cleanLocation, costLabel, isDemoPlaceId, mapsUrl, money, placeCategory, stopCategory,
 } from '../lib/places';
 
 /* ------------------------------------------------------------------ */
 /* One stop on the timeline                                            */
 /* ------------------------------------------------------------------ */
-function StopCard({ item, open, onToggle }) {
+function StopCard({ item, open, onToggle, currency }) {
   const category = stopCategory(item);
   const Icon = CATEGORY_ICONS[category];
   const location = cleanLocation(item.location);
@@ -22,7 +22,7 @@ function StopCard({ item, open, onToggle }) {
 
   return (
     <article className="card stop hover-zoom">
-      <PlacePhoto category={category} seed={`${title}-${item.time}`} src={item.photo_url} iconSize={44}>
+      <PlacePhoto category={category} seed={`${title}-${item.time}`} src={item.photo_url} placeId={item.google_place_id} iconSize={44}>
         <span className="time-chip">{item.time}</span>
         {Icon && <span className="icon-chip" aria-hidden="true"><Icon size={16} /></span>}
       </PlacePhoto>
@@ -33,7 +33,7 @@ function StopCard({ item, open, onToggle }) {
             <h3 className="stop__title">{title}</h3>
             {showActivity && <p className="stop__activity">{item.activity}</p>}
           </div>
-          <span className="stop__cost" aria-label={`Estimated cost ${costLabel(item)}`}>{costLabel(item)}</span>
+          <span className="stop__cost" aria-label={`Estimated cost ${costLabel(item, currency)}`}>{costLabel(item, currency)}</span>
         </div>
 
         {item.address ? (
@@ -162,6 +162,8 @@ export default function TripView({
   onBack, onDelete,
 }) {
   const isPreview = mode === 'preview';
+  const currency = itinerary.currency || 'USD';
+  const isDemo = Boolean(itinerary.demo) || (itinerary.items || []).some((i) => isDemoPlaceId(i.google_place_id));
   const days = useMemo(() => buildDays(itinerary), [itinerary]);
   const [dayIdx, setDayIdx] = useState(0);
   const [openKeys, setOpenKeys] = useState(() => new Set());
@@ -182,7 +184,7 @@ export default function TripView({
     return next;
   });
 
-  const dayTabLabel = (d) => `${d.items.length} ${d.items.length === 1 ? 'stop' : 'stops'} · ${money(d.total) || '—'}`;
+  const dayTabLabel = (d) => `${d.items.length} ${d.items.length === 1 ? 'stop' : 'stops'} · ${money(d.total, currency) || '—'}`;
 
   const actionsPreview = (
     <>
@@ -194,7 +196,7 @@ export default function TripView({
         {busy ? 'Rebuilding…' : 'Regenerate'}
       </button>
       <button type="button" className="btn btn--ghost btn--block" onClick={onEditRequest} disabled={busy}>
-        <Pencil size={16} aria-hidden="true" /> Change destination or budget
+        <Pencil size={16} aria-hidden="true" /> Change city or budget
       </button>
     </>
   );
@@ -241,16 +243,23 @@ export default function TripView({
           )}
         </header>
 
+        {isDemo && (
+          <p className="demo-note">
+            <Info size={16} aria-hidden="true" style={{ flexShrink: 0, marginTop: 2 }} />
+            Demo plan built from well-known places. Live photos, ratings and opening hours appear when Google Places is connected.
+          </p>
+        )}
+
         {/* Budget summary (phones & tablets; desktop shows it in the side panel) */}
         <section className="card budget-card only-narrow" aria-label="Budget">
           <div>
             <div className="budget-card__label">Day {current.day} estimate</div>
-            <div className="budget-card__big">{money(current.total) || '—'}</div>
+            <div className="budget-card__big">{money(current.total, currency) || '—'}</div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div className="budget-card__label">Total</div>
-            <div style={{ fontSize: 16, fontWeight: 700 }}>{money(tripTotal) || '—'}</div>
-            <div className="muted" style={{ fontSize: 12 }}>USD per person, approx.</div>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>{money(tripTotal, currency) || '—'}</div>
+            <div className="muted" style={{ fontSize: 12 }}>{currency} per person, approx.</div>
           </div>
         </section>
 
@@ -290,7 +299,7 @@ export default function TripView({
               <div className="timeline__body">
                 <h2 className="timeline__label">{group.name}</h2>
                 {group.items.map((item) => (
-                  <StopCard key={item._key} item={item} open={openKeys.has(item._key)} onToggle={() => toggle(item._key)} />
+                  <StopCard key={item._key} item={item} currency={currency} open={openKeys.has(item._key)} onToggle={() => toggle(item._key)} />
                 ))}
               </div>
             </div>
@@ -328,8 +337,8 @@ export default function TripView({
             <span className="badge">{itinerary.budget} {BUDGET_LABELS[itinerary.budget] || ''}</span>
           </div>
           <div>
-            <div className="summary__total">{money(tripTotal) || '—'}</div>
-            <div className="muted" style={{ fontSize: 13 }}>Estimated, USD per person</div>
+            <div className="summary__total">{money(tripTotal, currency) || '—'}</div>
+            <div className="muted" style={{ fontSize: 13 }}>Estimated, {currency} per person</div>
           </div>
           {days.length > 1 && (
             <div className="summary__rows">
@@ -337,7 +346,7 @@ export default function TripView({
                 <div key={d.day} className="summary__row">
                   <div className="summary__row-top">
                     <span style={{ color: 'var(--text-2)' }}>Day {d.day}</span>
-                    <span style={{ fontWeight: 700 }}>{money(d.total) || '—'}</span>
+                    <span style={{ fontWeight: 700 }}>{money(d.total, currency) || '—'}</span>
                   </div>
                   <div className="bar"><div className="bar__fill" style={{ width: `${Math.round((d.total / maxDayTotal) * 100)}%` }} /></div>
                 </div>
@@ -376,7 +385,7 @@ export default function TripView({
           <button type="button" className="btn btn--outline btn--lg btn--icon" aria-label="Regenerate plan" onClick={onRegenerate} disabled={busy}>
             {busy ? <LoaderCircle size={20} className="spinner" aria-hidden="true" /> : <RefreshCw size={20} aria-hidden="true" />}
           </button>
-          <button type="button" className="btn btn--outline btn--lg btn--icon" aria-label="Change destination or budget" onClick={onEditRequest} disabled={busy}>
+          <button type="button" className="btn btn--outline btn--lg btn--icon" aria-label="Change city or budget" onClick={onEditRequest} disabled={busy}>
             <Pencil size={18} aria-hidden="true" />
           </button>
           <button type="button" className="btn btn--primary btn--lg" onClick={onSave} disabled={busy}>

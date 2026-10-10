@@ -12,6 +12,8 @@ class Itinerary(Base):
     destination = Column(String, nullable=False)
     budget = Column(String, nullable=False) # Budget category, e.g. "$", "$$", "$$$"
     duration_days = Column(Integer, default=1)
+    city = Column(String, nullable=True) # Supported city slug, e.g. "tokyo"
+    currency = Column(String, nullable=True) # ISO 4217 code costs are estimated in
     items = Column(JSON, nullable=False) # JSON list containing details of each day's itinerary stops
     created_at = Column(DateTime, default=datetime.utcnow)
 

@@ -42,7 +42,7 @@ class _FakeOpenAI:
 
 @pytest.fixture
 def mock_itinerary_backends(monkeypatch):
-    async def fake_search_places_for_slot(destination, category, budget, max_results=5):
+    async def fake_search_places_for_slot(city, category, budget, max_results=5):
         return [CANDIDATE]
 
     monkeypatch.setattr(
@@ -89,7 +89,7 @@ def test_generate_itinerary_is_grounded_in_candidates(
 ):
     resp = client.post(
         "/api/v1/itineraries/generate",
-        json={"destination": "Testville", "budget": "$$", "duration_days": 1},
+        json={"city": "miami", "budget": "$$", "duration_days": 1},
         headers=auth_headers,
     )
     assert resp.status_code == 200, resp.text
@@ -146,7 +146,7 @@ def test_cross_day_candidates_do_not_repeat(monkeypatch):
         for i in range(40)
     ]
 
-    async def fake_search(destination, category, budget, max_results=5):
+    async def fake_search(city, category, budget, max_results=5):
         return pool[:max_results]
 
     monkeypatch.setattr(
@@ -176,7 +176,7 @@ def test_cross_day_candidates_do_not_repeat(monkeypatch):
 
     asyncio.run(
         itinerary_module.itinerary_service.generate_itinerary(
-            ItineraryGenerate(destination="Testville", budget="$$", duration_days=2)
+            ItineraryGenerate(city="miami", budget="$$", duration_days=2)
         )
     )
 
@@ -202,7 +202,7 @@ def test_cross_day_candidates_do_not_repeat(monkeypatch):
 def test_generate_itinerary_requires_auth(client):
     resp = client.post(
         "/api/v1/itineraries/generate",
-        json={"destination": "Testville", "budget": "$$", "duration_days": 1},
+        json={"city": "miami", "budget": "$$", "duration_days": 1},
     )
     assert resp.status_code == 401
 

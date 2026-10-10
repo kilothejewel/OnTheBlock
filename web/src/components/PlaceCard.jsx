@@ -9,7 +9,7 @@ export default function PlaceCard({ place, isSaved, onToggleSave }) {
 
   return (
     <article className="card place-card hover-zoom">
-      <PlacePhoto category={category} seed={place.google_place_id || place.name} src={place.photo_url}>
+      <PlacePhoto category={category} seed={place.google_place_id || place.name} src={place.photo_url} placeId={place.google_place_id}>
         {price ? <span className="badge">{price}</span> : <span />}
       </PlacePhoto>
 
@@ -26,6 +26,11 @@ export default function PlaceCard({ place, isSaved, onToggleSave }) {
               <Star size={15} fill="currentColor" aria-hidden="true" />
               {place.rating}
               <span className="sr-only"> out of 5</span>
+              {place.user_rating_count != null && (
+                <span className="muted" style={{ fontWeight: 400 }}>
+                  ({place.user_rating_count.toLocaleString()}<span className="sr-only"> reviews</span>)
+                </span>
+              )}
             </span>
           )}
           {types.map((t) => <span key={t} className="tag">{prettyType(t)}</span>)}

@@ -37,6 +37,7 @@ export function TripsView({ trips, onOpen, onPlan }) {
                   category={first ? stopCategory(first) : 'place'}
                   seed={first ? `${cleanLocation(first.location)}-${first.time}` : trip.title}
                   src={first?.photo_url}
+                  placeId={first?.google_place_id}
                 >
                   <span className="badge">{trip.budget} {BUDGET_LABELS[trip.budget] || ''}</span>
                 </PlacePhoto>
@@ -52,7 +53,7 @@ export function TripsView({ trips, onOpen, onPlan }) {
                     <span>{items.length} {items.length === 1 ? 'stop' : 'stops'}</span>
                   </span>
                   <span className="trip-card__foot">
-                    <span className="muted">Est. {money(total) || '—'}</span>
+                    <span className="muted">Est. {money(total, trip.currency || 'USD') || '—'}</span>
                     <span className="trip-card__cta" aria-hidden="true">View trip <ArrowRight size={16} /></span>
                   </span>
                 </div>

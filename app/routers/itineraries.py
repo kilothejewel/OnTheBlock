@@ -30,9 +30,10 @@ async def generate_itinerary(
         itinerary = await itinerary_service.generate_itinerary(params)
         return itinerary
     except Exception as e:
+        print(f"Itinerary generation failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate itinerary: {str(e)}"
+            detail="Couldn't plan that day. Please try again."
         )
 
 @router.post("/", response_model=ItineraryResponse, status_code=status.HTTP_201_CREATED)
@@ -50,6 +51,8 @@ def save_itinerary(
         destination=itinerary_in.destination,
         budget=itinerary_in.budget,
         duration_days=itinerary_in.duration_days,
+        city=itinerary_in.city,
+        currency=itinerary_in.currency,
         items=itinerary_in.items
     )
     db.add(itinerary)

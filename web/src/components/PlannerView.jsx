@@ -1,6 +1,7 @@
-import { MapPin, Sparkles, LoaderCircle } from 'lucide-react';
+import { Sparkles, LoaderCircle } from 'lucide-react';
 import { BUDGET_LABELS } from '../lib/places';
 import { LogoMark } from './Logo';
+import CityPicker from './CityPicker';
 
 const VIBES = ['art', 'coffee', 'food', 'nightlife', 'beach', 'museums', 'shopping', 'live music'];
 
@@ -8,7 +9,7 @@ function splitPrefs(value) {
   return value.split(',').map((s) => s.trim()).filter(Boolean);
 }
 
-export function PlannerForm({ destination, setDestination, budget, setBudget, duration, setDuration, preferences, setPreferences, onSubmit, generating }) {
+export function PlannerForm({ city, onCityChange, budget, setBudget, duration, setDuration, preferences, setPreferences, onSubmit, generating }) {
   const prefs = splitPrefs(preferences);
   const hasVibe = (v) => prefs.some((p) => p.toLowerCase() === v);
   const toggleVibe = (v) => {
@@ -26,19 +27,8 @@ export function PlannerForm({ destination, setDestination, budget, setBudget, du
 
       <form className="card card--pad planner__form" onSubmit={onSubmit}>
         <div className="field">
-          <label className="field__label" htmlFor="plan-destination">Where to?</label>
-          <div className="input-group">
-            <MapPin className="input-group__icon" size={20} aria-hidden="true" />
-            <input
-              id="plan-destination"
-              className="input"
-              type="text"
-              value={destination}
-              onChange={(e) => setDestination(e.target.value)}
-              placeholder="City, e.g. Miami, FL"
-              required
-            />
-          </div>
+          <span className="field__label" id="plan-city-label">Where?</span>
+          <CityPicker value={city} onChange={onCityChange} labelledBy="plan-city-label" />
         </div>
 
         <div className="planner__row">
@@ -100,7 +90,7 @@ export function PlannerForm({ destination, setDestination, budget, setBudget, du
           />
         </div>
 
-        <button type="submit" className="btn btn--primary btn--lg btn--block" disabled={generating || !destination.trim()}>
+        <button type="submit" className="btn btn--primary btn--lg btn--block" disabled={generating}>
           {generating
             ? <><LoaderCircle size={18} className="spinner" aria-hidden="true" /> Building your plan…</>
             : <><Sparkles size={18} aria-hidden="true" /> Plan my {Number(duration) === 1 ? 'day' : `${duration} days`}</>}

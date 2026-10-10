@@ -39,7 +39,7 @@ export function categoryOf(...texts) {
 }
 
 export function stopCategory(item) {
-  return categoryOf(item.activity, item.location, item.description);
+  return item.category || categoryOf(item.activity, item.location, item.description);
 }
 
 export function placeCategory(place) {
@@ -62,17 +62,26 @@ export function cleanLocation(location = '') {
   return location.replace(/^\[Unverified\]\s*/i, '');
 }
 
-export function money(n) {
+// Whole amounts in the plan's currency: "$25", "£18", "R450", "¥1,500"; 0 is "Free".
+export function money(n, currency = 'USD') {
   if (n === undefined || n === null || Number.isNaN(Number(n))) return null;
-  return Number(n) === 0 ? 'Free' : `$${Math.round(Number(n))}`;
+  if (Number(n) === 0) return 'Free';
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency', currency, currencyDisplay: 'narrowSymbol', maximumFractionDigits: 0,
+  }).format(Number(n));
 }
 
 export function priceLevelLabel(level) {
   return level ? '$'.repeat(level) : null;
 }
 
-export function costLabel(item) {
-  return money(item.estimated_cost) || priceLevelLabel(item.price_level) || '—';
+export function costLabel(item, currency) {
+  return money(item.estimated_cost, currency) || priceLevelLabel(item.price_level) || '—';
+}
+
+// Demo data (no Google key) uses ids starting with "mock_".
+export function isDemoPlaceId(id) {
+  return String(id || '').startsWith('mock_');
 }
 
 export function sumCost(items) {

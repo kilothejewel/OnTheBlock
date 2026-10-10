@@ -19,6 +19,7 @@ class Hotspot(Base):
     google_place_id = Column(String, unique=True, index=True, nullable=False)
     name = Column(String, nullable=False)
     rating = Column(Float, nullable=True)
+    user_rating_count = Column(Integer, nullable=True)
     address = Column(String, nullable=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)

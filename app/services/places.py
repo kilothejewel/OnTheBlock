@@ -1,299 +1,199 @@
+import re
+import time
+from typing import Any, Dict, List, Optional
+
 import httpx
-from typing import List, Dict, Any, Optional
+
+from app.core.cities import City
 from app.core.config import settings
+from app.services.demo_places import demo_search, demo_slot
+
+PLACES_API = "https://places.googleapis.com/v1"
+
+# Only the fields we show. The field mask also decides which tier a call is billed at.
+SEARCH_FIELD_MASK = ",".join(
+    f"places.{field}"
+    for field in (
+        "id",
+        "displayName",
+        "formattedAddress",
+        "location",
+        "rating",
+        "userRatingCount",
+        "priceLevel",
+        "types",
+        "photos",
+    )
+)
+
+# Places API (New) returns price level as an enum; the app uses 0-4.
+PRICE_LEVELS = {
+    "PRICE_LEVEL_FREE": 0,
+    "PRICE_LEVEL_INEXPENSIVE": 1,
+    "PRICE_LEVEL_MODERATE": 2,
+    "PRICE_LEVEL_EXPENSIVE": 3,
+    "PRICE_LEVEL_VERY_EXPENSIVE": 4,
+}
+
+# Budget tier -> acceptable price levels. Places with no price level are kept.
+BUDGET_PRICE_RANGES = {"$": (0, 1), "$$": (1, 2), "$$$": (2, 4)}
+
+# Place ids are URL-safe tokens; checking them keeps request paths well-formed.
+PLACE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{10,300}$")
+PHOTO_TTL_SECONDS = 60 * 60
+CACHE_LIMIT = 2000
+
+
+class PlacesError(Exception):
+    """A Google Places request failed."""
+
+
+def parse_place(item: Dict[str, Any]) -> Dict[str, Any]:
+    """Map a Places API (New) place to the app's place shape."""
+    location = item.get("location") or {}
+    return {
+        "google_place_id": item.get("id"),
+        "name": (item.get("displayName") or {}).get("text"),
+        "rating": item.get("rating"),
+        "user_rating_count": item.get("userRatingCount"),
+        "address": item.get("formattedAddress"),
+        "latitude": location.get("latitude"),
+        "longitude": location.get("longitude"),
+        "price_level": PRICE_LEVELS.get(item.get("priceLevel")),
+        "types": ", ".join(item.get("types", [])),
+    }
+
 
 class GooglePlacesService:
     def __init__(self):
         self.api_key = settings.GOOGLE_PLACES_API_KEY
-        self.base_url = "https://maps.googleapis.com/maps/api/place"
+        # place id -> first photo reference seen in a search, so showing a
+        # result's photo needs no extra details call
+        self._photo_refs: Dict[str, Dict[str, Any]] = {}
+        # place id -> (expires at, photo url + credit)
+        self._photo_urls: Dict[str, tuple] = {}
 
-    async def search_places(self, query: str, location: Optional[str] = None) -> List[Dict[str, Any]]:
+    @property
+    def live(self) -> bool:
+        """False without a real API key; the service then serves demo data."""
+        return bool(self.api_key) and self.api_key != "your_google_places_api_key"
+
+    async def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        field_mask: Optional[str] = None,
+        json: Optional[Dict[str, Any]] = None,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        headers = {"X-Goog-Api-Key": self.api_key}
+        if field_mask:
+            headers["X-Goog-FieldMask"] = field_mask
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                response = await client.request(
+                    method, f"{PLACES_API}/{path}", headers=headers, json=json, params=params
+                )
+        except httpx.HTTPError as exc:
+            raise PlacesError(f"Google Places request failed: {exc}") from exc
+        if response.status_code != 200:
+            raise PlacesError(f"Google Places returned {response.status_code}: {response.text[:200]}")
+        return response.json()
+
+    async def search_places(self, query: str, city: City) -> List[Dict[str, Any]]:
         """
-        Search for places using Google Places Text Search.
-        Example query: 'restaurants in Miami' or 'trendy spots in Soho, London'
+        Search places in a city with Places API (New) Text Search, biased to the
+        city's area. Raises PlacesError if Google can't be reached or refuses.
         """
-        # If API key is empty or not set, use mock fallback to prevent crash and show visual data
-        if not self.api_key or self.api_key == "your_google_places_api_key":
-            return self._get_mock_places(query)
+        if not self.live:
+            return demo_search(city, query)
 
-        url = f"{self.base_url}/textsearch/json"
-        params = {
-            "query": query,
-            "key": self.api_key
-        }
-        if location:
-            params["location"] = location
-
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.get(url, params=params)
-                response.raise_for_status()
-                data = response.json()
-                results = data.get("results", [])
-                
-                places = []
-                for item in results:
-                    places.append({
-                        "google_place_id": item.get("place_id"),
-                        "name": item.get("name"),
-                        "rating": item.get("rating"),
-                        "address": item.get("formatted_address"),
-                        "latitude": item.get("geometry", {}).get("location", {}).get("lat"),
-                        "longitude": item.get("geometry", {}).get("location", {}).get("lng"),
-                        "price_level": item.get("price_level"),
-                        "types": ", ".join(item.get("types", []))
-                    })
-                return places
-            except Exception as e:
-                print(f"Error calling Google Places API: {e}")
-                return self._get_mock_places(query)
-
-    async def get_place_details(self, place_id: str) -> Dict[str, Any]:
-        """
-        Get detailed information for a specific place.
-        """
-        if not self.api_key or self.api_key == "your_google_places_api_key":
-            return self._get_mock_place_details(place_id)
-
-        url = f"{self.base_url}/details/json"
-        params = {
-            "place_id": place_id,
-            "key": self.api_key
-        }
-
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.get(url, params=params)
-                response.raise_for_status()
-                data = response.json()
-                result = data.get("result", {})
-                
-                return {
-                    "google_place_id": place_id,
-                    "name": result.get("name"),
-                    "rating": result.get("rating"),
-                    "address": result.get("formatted_address"),
-                    "latitude": result.get("geometry", {}).get("location", {}).get("lat"),
-                    "longitude": result.get("geometry", {}).get("location", {}).get("lng"),
-                    "price_level": result.get("price_level"),
-                    "types": ", ".join(result.get("types", []))
+        body = {
+            "textQuery": f"{query} in {city.name}",
+            "locationBias": {
+                "circle": {
+                    "center": {"latitude": city.lat, "longitude": city.lng},
+                    "radius": float(city.radius_m),
                 }
-            except Exception as e:
-                print(f"Error calling Google Places Details API: {e}")
-                return self._get_mock_place_details(place_id)
+            },
+            "regionCode": city.country_code,
+            "languageCode": "en",
+            "pageSize": 20,
+        }
+        data = await self._request("POST", "places:searchText", field_mask=SEARCH_FIELD_MASK, json=body)
+
+        places = []
+        for item in data.get("places", []):
+            places.append(parse_place(item))
+            photos = item.get("photos") or []
+            if item.get("id") and photos:
+                self._remember(self._photo_refs, item["id"], photos[0])
+        return places
 
     async def search_places_for_slot(
-        self,
-        destination: str,
-        category: str,
-        budget: str,
-        max_results: int = 5
+        self, city: City, category: str, budget: str, max_results: int = 5
     ) -> List[Dict[str, Any]]:
         """
-        Search for places for a specific itinerary slot based on destination,
-        category, and budget tier.
-
-        Parameters:
-            destination: The target city or location (e.g. "Tokyo", "Paris").
-            category: Activity category (e.g. "breakfast", "lunch", "dinner", "nightlife", "activity", "coffee").
-            budget: Price tier ("$", "$$", or "$$$").
-            max_results: Maximum number of places to return (default 5).
-
-        Returns:
-            List of place dictionaries filtered by budget and sorted by rating descending (nulls last).
+        Candidates for one itinerary slot (e.g. "breakfast", "nightlife") in a
+        city, filtered to the budget tier and sorted by rating (unrated last).
         """
-        # Budget to Google Places price_level range mapping:
-        # "$" -> 0-1, "$$" -> 1-2, "$$$" -> 2-4
-        budget_price_ranges = {
-            "$": (0, 1),
-            "$$": (1, 2),
-            "$$$": (2, 4),
-        }
-        min_price, max_price = budget_price_ranges.get(budget, (0, 4))
+        if not self.live:
+            return demo_slot(city, category)[:max_results]
 
-        # If API key is empty or not set, use mock fallback
-        if not self.api_key or self.api_key == "your_google_places_api_key":
-            return self._get_mock_places_for_slot(destination, category, budget)[:max_results]
-
-        query = f"best {category} spots in {destination}"
-        url = f"{self.base_url}/textsearch/json"
-        params = {
-            "query": query,
-            "key": self.api_key
-        }
-
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.get(url, params=params)
-                response.raise_for_status()
-                data = response.json()
-                results = data.get("results", [])
-
-                places = []
-                for item in results:
-                    places.append({
-                        "google_place_id": item.get("place_id"),
-                        "name": item.get("name"),
-                        "rating": item.get("rating"),
-                        "address": item.get("formatted_address"),
-                        "latitude": item.get("geometry", {}).get("location", {}).get("lat"),
-                        "longitude": item.get("geometry", {}).get("location", {}).get("lng"),
-                        "price_level": item.get("price_level"),
-                        "types": ", ".join(item.get("types", []))
-                    })
-
-                # Filter by price_level: keep places where price_level falls within range or is missing/null
-                filtered_places = [
-                    p for p in places
-                    if p.get("price_level") is None or (min_price <= p.get("price_level") <= max_price)
-                ]
-
-                # Sort by rating descending (nulls last)
-                sorted_places = sorted(
-                    filtered_places,
-                    key=lambda p: (
-                        p.get("rating") is not None,
-                        p.get("rating") if p.get("rating") is not None else float("-inf")
-                    ),
-                    reverse=True
-                )
-
-                return sorted_places[:max_results]
-            except Exception as e:
-                print(f"Error calling Google Places API: {e}")
-                return self._get_mock_places_for_slot(destination, category, budget)[:max_results]
-
-    def _get_mock_places(self, query: str) -> List[Dict[str, Any]]:
-        """Mock data fallback if API key is not configured."""
-        print("Using mock data for Google Places search...")
-        return [
-            {
-                "google_place_id": "mock_place_1",
-                "name": "The Block Cafe & Bistro",
-                "rating": 4.7,
-                "address": "123 Main St, Miami, FL",
-                "latitude": 25.7617,
-                "longitude": -80.1918,
-                "price_level": 2,
-                "types": "cafe, restaurant, food"
-            },
-            {
-                "google_place_id": "mock_place_2",
-                "name": "Sunset Lounge Rooftop",
-                "rating": 4.5,
-                "address": "456 Ocean Dr, Miami, FL",
-                "latitude": 25.7781,
-                "longitude": -80.1313,
-                "price_level": 3,
-                "types": "bar, night_club, point_of_interest"
-            },
-            {
-                "google_place_id": "mock_place_3",
-                "name": "Wynwood Art Tavern",
-                "rating": 4.6,
-                "address": "789 NW 2nd Ave, Miami, FL",
-                "latitude": 25.8015,
-                "longitude": -80.1991,
-                "price_level": 2,
-                "types": "bar, restaurant, establishment"
-            },
-            {
-                "google_place_id": "mock_place_4",
-                "name": "Blue Velvet Jazz Lounge",
-                "rating": 4.8,
-                "address": "101 Brickell Ave, Miami, FL",
-                "latitude": 25.7650,
-                "longitude": -80.1905,
-                "price_level": 3,
-                "types": "bar, restaurant, food"
-            },
-            {
-                "google_place_id": "mock_place_5",
-                "name": "Organic Garden Bowls",
-                "rating": 4.4,
-                "address": "202 Coral Way, Miami, FL",
-                "latitude": 25.7505,
-                "longitude": -80.2110,
-                "price_level": 1,
-                "types": "restaurant, health, food"
-            }
+        places = await self.search_places(f"best {category} spots", city)
+        min_price, max_price = BUDGET_PRICE_RANGES.get(budget, (0, 4))
+        in_budget = [
+            p for p in places
+            if p["price_level"] is None or min_price <= p["price_level"] <= max_price
         ]
+        in_budget.sort(
+            key=lambda p: (p["rating"] is not None, p["rating"] or 0),
+            reverse=True,
+        )
+        return in_budget[:max_results]
 
-    def _get_mock_place_details(self, place_id: str) -> Dict[str, Any]:
-        """Mock data fallback for place details."""
-        name_map = {
-            "mock_place_1": "The Block Cafe & Bistro",
-            "mock_place_2": "Sunset Lounge Rooftop",
-            "mock_place_3": "Wynwood Art Tavern",
-            "mock_place_4": "Blue Velvet Jazz Lounge",
-            "mock_place_5": "Organic Garden Bowls"
-        }
-        address_map = {
-            "mock_place_1": "123 Main St, Miami, FL",
-            "mock_place_2": "456 Ocean Dr, Miami, FL",
-            "mock_place_3": "789 NW 2nd Ave, Miami, FL",
-            "mock_place_4": "101 Brickell Ave, Miami, FL",
-            "mock_place_5": "202 Coral Way, Miami, FL"
-        }
-        return {
-            "google_place_id": place_id,
-            "name": name_map.get(place_id, f"Premium Spot {place_id.split('_')[-1]}"),
-            "rating": 4.6,
-            "address": address_map.get(place_id, "999 Luxe Blvd, Miami, FL"),
-            "latitude": 25.7617,
-            "longitude": -80.1918,
-            "price_level": 2,
-            "types": "restaurant, food, point_of_interest"
-        }
-
-    def _get_mock_places_for_slot(self, destination: str, category: str, budget: str) -> List[Dict[str, Any]]:
+    async def get_photo(self, place_id: str) -> Optional[Dict[str, Optional[str]]]:
         """
-        Mock data fallback for slot searches if API key is not configured.
-        Returns 3 plausible mock places matching the requested category and budget.
+        URL and author credit for a place's main photo, or None when there is
+        no photo (or no API key). Results are cached for an hour.
         """
-        print("Using mock data for Google Places slot search...")
-        cat_title = category.title()
-        cat_slug = category.lower().replace(" ", "_")
+        if not self.live or place_id.startswith("mock_") or not PLACE_ID_RE.match(place_id):
+            return None
 
-        price_level_map = {
-            "$": 1,
-            "$$": 2,
-            "$$$": 3,
-        }
-        price_level = price_level_map.get(budget, 2)
+        cached = self._photo_urls.get(place_id)
+        if cached and cached[0] > time.monotonic():
+            return cached[1]
 
-        # Placeholder coordinates for mock/no-API-key mode only; not reflective of the actual destination.
-        return [
-            {
-                "google_place_id": f"mock_{cat_slug}_1",
-                "name": f"{cat_title} Spot 1",
-                "rating": 4.8,
-                "address": f"101 Main St, {destination}",
-                "latitude": 40.7128,
-                "longitude": -74.0060,
-                "price_level": price_level,
-                "types": f"{category.lower()}, point_of_interest, establishment"
-            },
-            {
-                "google_place_id": f"mock_{cat_slug}_2",
-                "name": f"{cat_title} Spot 2",
-                "rating": 4.6,
-                "address": f"202 Market St, {destination}",
-                "latitude": 40.7145,
-                "longitude": -74.0042,
-                "price_level": price_level,
-                "types": f"{category.lower()}, point_of_interest, establishment"
-            },
-            {
-                "google_place_id": f"mock_{cat_slug}_3",
-                "name": f"{cat_title} Spot 3",
-                "rating": 4.5,
-                "address": f"303 Grand Ave, {destination}",
-                "latitude": 40.7112,
-                "longitude": -74.0083,
-                "price_level": price_level,
-                "types": f"{category.lower()}, point_of_interest, establishment"
+        photo = self._photo_refs.get(place_id)
+        if photo is None:
+            details = await self._request("GET", f"places/{place_id}", field_mask="photos")
+            photos = details.get("photos") or []
+            photo = photos[0] if photos else None
+
+        result = None
+        if photo and photo.get("name"):
+            media = await self._request(
+                "GET",
+                f"{photo['name']}/media",
+                params={"maxWidthPx": 800, "skipHttpRedirect": "true"},
+            )
+            author = (photo.get("authorAttributions") or [{}])[0]
+            result = {
+                "url": media.get("photoUri"),
+                "attribution": author.get("displayName"),
+                "attribution_url": author.get("uri"),
             }
-        ]
+
+        self._remember(self._photo_urls, place_id, (time.monotonic() + PHOTO_TTL_SECONDS, result))
+        return result
+
+    @staticmethod
+    def _remember(cache: Dict[str, Any], key: str, value: Any) -> None:
+        """Store in a size-capped cache, dropping the oldest entry when full."""
+        if key not in cache and len(cache) >= CACHE_LIMIT:
+            cache.pop(next(iter(cache)))
+        cache[key] = value
+
 
 places_service = GooglePlacesService()

@@ -300,6 +300,16 @@ a.sr-only:focus {
 }
 .chip:hover { border-color: var(--text-3); color: var(--text); }
 .chip[aria-pressed='true'] { background: var(--inverse); border-color: var(--inverse); color: var(--on-inverse); }
+/* Single-choice chips (city picker) use the brand colour, unlike the vibe toggles */
+.chip--choice[aria-checked='true'] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+.demo-note {
+  display: flex; gap: 8px; align-items: flex-start;
+  padding: 10px 14px; margin-bottom: 16px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2); color: var(--text-2);
+  font-size: 14px;
+}
 
 .badge {
   display: inline-flex; align-items: center; gap: 4px;
@@ -582,6 +592,16 @@ a.sr-only:focus {
   transition: transform 0.5s var(--ease), opacity 0.3s var(--ease);
 }
 .photo img[data-loaded='false'] { opacity: 0; }
+.photo__credit {
+  position: absolute; right: 8px; bottom: 8px; z-index: 1;
+  max-width: calc(100% - 16px);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: rgba(26, 28, 28, 0.6); color: #ffffff;
+  font-size: 11px; text-decoration: none;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.photo__credit:hover { color: #ffffff; text-decoration: underline; }
 .photo__overlay { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; z-index: 1; }
 
 .hover-zoom:hover .photo img { transform: scale(1.04); }

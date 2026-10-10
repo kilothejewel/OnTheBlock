@@ -8,6 +8,7 @@ import TripView from './components/TripView';
 import { TripsView, SavedView } from './components/CollectionViews';
 import { PERIODS } from './lib/places';
 import { apiFetch } from './lib/api';
+import { cityBySlug, rememberCity, storedCity } from './lib/cities';
 
 const EMPTY_AUTH_FORM = { identifier: '', email: '', username: '', password: '' };
 
@@ -24,12 +25,12 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('discover'); // 'discover' | 'planner' | 'trips' | 'saved'
 
   // Discover State
-  const [searchQuery, setSearchQuery] = useState('trendy cafes in Miami');
+  const [searchQuery, setSearchQuery] = useState('trendy cafes');
   const [places, setPlaces] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
 
   // Itinerary Planner State
-  const [destination, setDestination] = useState('Miami, FL');
+  const [city, setCity] = useState(storedCity);
   const [budget, setBudget] = useState('$$');
   const [duration, setDuration] = useState(1);
   const [preferences, setPreferences] = useState('art, coffee, beach vibes');
@@ -56,6 +57,14 @@ export default function App() {
     setActiveTab(tab);
     setViewingItinerary(null);
     window.scrollTo({ top: 0 });
+  };
+
+  // One city for the whole app; switching clears results from the old city.
+  const changeCity = (slug) => {
+    if (slug === city) return;
+    setCity(slug);
+    setPlaces([]);
+    rememberCity(slug);
   };
 
   // Persist an authenticated session (real JWT from the backend)
@@ -187,7 +196,7 @@ export default function App() {
     setSearchLoading(true);
 
     try {
-      setPlaces(await api(`/hotspots/recommend?query=${encodeURIComponent(searchQuery.trim())}`));
+      setPlaces(await api(`/hotspots/recommend?query=${encodeURIComponent(searchQuery.trim())}&city=${city}`));
     } catch (err) {
       reportError(err, "Couldn't load places. Please try again.");
     } finally {
@@ -217,7 +226,6 @@ export default function App() {
   // Generate Itinerary (also used by "Regenerate", which passes no event)
   const handleGenerateItinerary = async (e) => {
     if (e) e.preventDefault();
-    if (!destination.trim()) return;
     setGenerating(true);
     setPreviewItinerary(null);
     window.scrollTo({ top: 0 });
@@ -226,7 +234,7 @@ export default function App() {
       const itinerary = await api('/itineraries/generate', {
         method: 'POST',
         body: {
-          destination: destination.trim(),
+          city,
           budget,
           duration_days: Number(duration),
           preferences,
@@ -319,7 +327,7 @@ export default function App() {
   const renderPage = () => {
     switch (activeTab) {
       case 'planner':
-        if (generating) return <GeneratingState destination={destination} duration={duration} />;
+        if (generating) return <GeneratingState destination={cityBySlug(city)?.name} duration={duration} />;
         if (previewItinerary) {
           return (
             <TripView
@@ -337,7 +345,7 @@ export default function App() {
         }
         return (
           <PlannerForm
-            destination={destination} setDestination={setDestination}
+            city={city} onCityChange={changeCity}
             budget={budget} setBudget={setBudget}
             duration={duration} setDuration={setDuration}
             preferences={preferences} setPreferences={setPreferences}
@@ -370,6 +378,8 @@ export default function App() {
       default:
         return (
           <DiscoverView
+            city={city}
+            onCityChange={changeCity}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             onSearch={handleSearch}

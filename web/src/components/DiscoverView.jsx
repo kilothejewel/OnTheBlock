@@ -1,6 +1,9 @@
-import { Search, LoaderCircle, Compass } from 'lucide-react';
+import { Search, LoaderCircle, Compass, Info } from 'lucide-react';
 import PlaceCard from './PlaceCard';
+import CityPicker from './CityPicker';
 import { EmptyState } from './Feedback';
+import { cityBySlug } from '../lib/cities';
+import { isDemoPlaceId } from '../lib/places';
 
 function SkeletonCard() {
   return (
@@ -16,18 +19,24 @@ function SkeletonCard() {
   );
 }
 
-export default function DiscoverView({ searchQuery, setSearchQuery, onSearch, searchLoading, places, savedHotspots, onToggleSave }) {
+export default function DiscoverView({ city, onCityChange, searchQuery, setSearchQuery, onSearch, searchLoading, places, savedHotspots, onToggleSave }) {
   const savedIds = new Set(savedHotspots.map((h) => h.google_place_id));
+  const cityName = cityBySlug(city)?.name;
+  const isDemo = places.length > 0 && places.every((p) => isDemoPlaceId(p.google_place_id));
 
   return (
     <>
       <section className="page-header">
         <span className="eyebrow">Discover</span>
         <h1 className="page-title">What's good on the block?</h1>
-        <p className="page-lede">Search any city for cafés, bars, restaurants and things to do. Save the ones you like.</p>
+        <p className="page-lede">Find cafés, bars, restaurants and things to do in {cityName}. Save the ones you like.</p>
       </section>
 
       <form className="search-hero" onSubmit={onSearch} role="search">
+        <div className="field">
+          <span className="field__label" id="discover-city-label">City</span>
+          <CityPicker value={city} onChange={onCityChange} labelledBy="discover-city-label" />
+        </div>
         <label htmlFor="discover-search" className="sr-only">Search places</label>
         <div className="search-bar">
           <div className="input-group">
@@ -38,7 +47,7 @@ export default function DiscoverView({ searchQuery, setSearchQuery, onSearch, se
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="e.g. cocktail bars in SoHo, New York"
+              placeholder="e.g. rooftop bars, brunch, live music"
             />
           </div>
           <button type="submit" className="btn btn--primary btn--lg" disabled={searchLoading || !searchQuery.trim()}>
@@ -54,7 +63,7 @@ export default function DiscoverView({ searchQuery, setSearchQuery, onSearch, se
         </div>
       ) : places.length === 0 ? (
         <EmptyState icon={Compass} title="Start with a search">
-          Try a type of place plus a city, like “brunch spots in Cape Town” or “rooftop bars in Miami”.
+          Try a type of place in {cityName}, like “brunch spots” or “rooftop bars”.
         </EmptyState>
       ) : (
         <>
@@ -62,6 +71,12 @@ export default function DiscoverView({ searchQuery, setSearchQuery, onSearch, se
             <h2 className="section-title">Results</h2>
             <span className="muted">{places.length} {places.length === 1 ? 'place' : 'places'}</span>
           </div>
+          {isDemo && (
+            <p className="demo-note">
+              <Info size={16} aria-hidden="true" style={{ flexShrink: 0, marginTop: 2 }} />
+              Showing demo places for {cityName}. Live photos, ratings and prices appear when Google Places is connected.
+            </p>
+          )}
           <div className="grid">
             {places.map((place) => (
               <PlaceCard
