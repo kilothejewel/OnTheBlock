@@ -33,7 +33,11 @@ class Settings(BaseSettings):
 
     #CORS Settings
     # Comma-separated list of origins allowed to call the API from a browser.
-    FRONTEND_ORIGINS: str = "http://localhost:5173"
+    FRONTEND_ORIGINS: str = "http://localhost:5273,http://127.0.0.1:5273"
+    # Regex for extra allowed origins. The default accepts the app served from
+    # this machine on any port, so local dev keeps working if the Vite port
+    # changes. Set OTB_FRONTEND_ORIGIN_REGEX to an empty value in production.
+    FRONTEND_ORIGIN_REGEX: Optional[str] = r"^http://(localhost|127\.0\.0\.1|\[::1\]):\d+$"
 
     @property
     def frontend_origins(self) -> List[str]:

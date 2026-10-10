@@ -31,10 +31,11 @@ app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
 # Configure CORS. Origins are read from the OTB_FRONTEND_ORIGINS setting
-# (comma-separated); defaults to the local Vite dev server.
+# (comma-separated) plus OTB_FRONTEND_ORIGIN_REGEX (any local port by default).
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.frontend_origins,
+    allow_origin_regex=settings.FRONTEND_ORIGIN_REGEX or None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
