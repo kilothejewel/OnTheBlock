@@ -1,0 +1,79 @@
+import { Search, LoaderCircle, Compass } from 'lucide-react';
+import PlaceCard from './PlaceCard';
+import { EmptyState } from './Feedback';
+
+function SkeletonCard() {
+  return (
+    <div className="card place-card" aria-hidden="true">
+      <div className="skeleton" style={{ height: 168, borderRadius: 0 }} />
+      <div className="place-card__body">
+        <div className="skeleton" style={{ height: 20, width: '70%' }} />
+        <div className="skeleton" style={{ height: 14, width: '90%' }} />
+        <div className="skeleton" style={{ height: 14, width: '40%' }} />
+        <div className="skeleton" style={{ height: 44, marginTop: 12 }} />
+      </div>
+    </div>
+  );
+}
+
+export default function DiscoverView({ searchQuery, setSearchQuery, onSearch, searchLoading, places, savedHotspots, onToggleSave }) {
+  const savedIds = new Set(savedHotspots.map((h) => h.google_place_id));
+
+  return (
+    <>
+      <section className="page-header">
+        <span className="eyebrow">Discover</span>
+        <h1 className="page-title">What's good on the block?</h1>
+        <p className="page-lede">Search any city for cafés, bars, restaurants and things to do. Save the ones you like.</p>
+      </section>
+
+      <form className="search-hero" onSubmit={onSearch} role="search">
+        <label htmlFor="discover-search" className="sr-only">Search places</label>
+        <div className="search-bar">
+          <div className="input-group">
+            <Search className="input-group__icon" size={20} aria-hidden="true" />
+            <input
+              id="discover-search"
+              className="input"
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="e.g. cocktail bars in SoHo, New York"
+            />
+          </div>
+          <button type="submit" className="btn btn--primary btn--lg" disabled={searchLoading || !searchQuery.trim()}>
+            {searchLoading ? <LoaderCircle size={18} className="spinner" aria-hidden="true" /> : <Search size={18} aria-hidden="true" />}
+            {searchLoading ? 'Searching…' : 'Find places'}
+          </button>
+        </div>
+      </form>
+
+      {searchLoading ? (
+        <div className="grid" aria-busy="true">
+          {[0, 1, 2].map((i) => <SkeletonCard key={i} />)}
+        </div>
+      ) : places.length === 0 ? (
+        <EmptyState icon={Compass} title="Start with a search">
+          Try a type of place plus a city, like “brunch spots in Cape Town” or “rooftop bars in Miami”.
+        </EmptyState>
+      ) : (
+        <>
+          <div className="results-head">
+            <h2 className="section-title">Results</h2>
+            <span className="muted">{places.length} {places.length === 1 ? 'place' : 'places'}</span>
+          </div>
+          <div className="grid">
+            {places.map((place) => (
+              <PlaceCard
+                key={place.google_place_id}
+                place={place}
+                isSaved={savedIds.has(place.google_place_id)}
+                onToggleSave={onToggleSave}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </>
+  );
+}
