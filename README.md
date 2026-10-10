@@ -1,4 +1,6 @@
-# OnTheBlock
+<p align="center"><img src="web/public/logo-mark.svg" width="72" alt="On the Block logo"></p>
+
+<h1 align="center">On the Block</h1>
 
 **OnTheBlock** is a dual-platform solution (Web Application + Chrome Extension) designed to help users discover trendy places and create budget-based itineraries. Whether you're planning a night out or a weekend trip, OnTheBlock curates the hottest spots for you.
 
