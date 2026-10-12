@@ -1,4 +1,8 @@
-# OnTheBlock
+<p align="center"><img src="web/public/logo-mark.svg" width="72" alt="On the Block logo"></p>
+
+<h1 align="center">On the Block</h1>
+
+<p align="center"><a href="https://github.com/kilothejewel/OnTheBlock/actions/workflows/ci.yml"><img src="https://github.com/kilothejewel/OnTheBlock/actions/workflows/ci.yml/badge.svg" alt="CI status"></a></p>
 
 **OnTheBlock** is a dual-platform solution (Web Application + Chrome Extension) designed to help users discover trendy places and create budget-based itineraries. Whether you're planning a night out or a weekend trip, OnTheBlock curates the hottest spots for you.
 
@@ -77,3 +81,16 @@ The architecture is designed "API-First". The FastAPI backend is the central bra
    ```bash
    pytest
    ```
+   To run the same tests against Postgres, point `OTB_TEST_DATABASE_URL` at a
+   database, e.g. `postgresql://user:pass@localhost:5432/otb_test`.
+
+## Continuous integration and deployment
+
+- **CI** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every
+  pull request and every push to `main`: the API test suite against both SQLite
+  and Postgres 16, and the web app's lint and production build.
+- **CD**: Render deploys the API from `main` only after those checks pass
+  ([`render.yaml`](render.yaml)), and Netlify builds a preview site for each pull
+  request and deploys `main` to production.
+- **Dependabot** opens grouped monthly update PRs for Python, npm and GitHub
+  Actions, each verified by CI.

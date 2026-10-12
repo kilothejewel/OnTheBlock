@@ -1,13 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy.orm import Session
 from typing import List
+from app.core.cities import CitySlug, get_city
 from app.core.database import get_db
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.models.user import User
 from app.models.hotspot import Hotspot
 from app.schemas.hotspot import HotspotCreate, HotspotResponse
-from app.services.places import places_service
+from app.services.places import PlacesError, places_service
 
 router = APIRouter(prefix="/hotspots", tags=["hotspots"])
 
@@ -16,21 +17,22 @@ router = APIRouter(prefix="/hotspots", tags=["hotspots"])
 async def recommend_hotspots(
     request: Request,
     response: Response,
-    query: str,
+    query: str = Query(..., min_length=1, max_length=120),
+    city: CitySlug = "miami",
     current_user: User = Depends(get_current_user)
 ):
     """
-    Search and retrieve recommended hotspots from Google Places API.
+    Search places in one of the supported cities with Google Places.
 
     Rate limited to 20 requests/minute per client (each call hits Google Places).
     """
     try:
-        places = await places_service.search_places(query)
-        return places
-    except Exception as e:
+        return await places_service.search_places(query, get_city(city))
+    except PlacesError as e:
+        print(f"Places search failed: {e}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch recommendations: {str(e)}"
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Couldn't reach Google Places right now. Please try again.",
         )
 
 @router.post("/", response_model=HotspotResponse, status_code=status.HTTP_201_CREATED)

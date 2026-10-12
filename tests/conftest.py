@@ -1,9 +1,10 @@
 """
 Shared test fixtures.
 
-The suite runs entirely against an in-memory SQLite database (no Postgres, no
-network). A single shared connection is kept alive with SQLAlchemy's StaticPool so
-every session in a test sees the same data. External services (OpenAI, Google
+The suite runs against an in-memory SQLite database by default (no network). A
+single shared connection is kept alive with SQLAlchemy's StaticPool so every
+session in a test sees the same data. Set OTB_TEST_DATABASE_URL to run the same
+tests against Postgres, as CI does. External services (OpenAI, Google
 Places) are monkeypatched in the tests that need them.
 """
 
@@ -19,6 +20,7 @@ os.environ.setdefault("OTB_OPENAI_API_KEY", "your_openai_api_key")
 os.environ.setdefault("OTB_GOOGLE_PLACES_API_KEY", "your_google_places_api_key")
 os.environ.setdefault("OTB_SECRET_KEY", "test-secret-key-not-for-production")
 os.environ.setdefault("OTB_DATABASE_URL", "sqlite://")
+os.environ.setdefault("OTB_FRONTEND_ORIGIN_REGEX", r"^http://(localhost|127\.0\.0\.1|\[::1\]):\d+$")
 
 import pytest
 from fastapi.testclient import TestClient
@@ -34,11 +36,17 @@ from app.main import app
 # cause flaky 429s once the whole suite exceeds the global default, so disable it.
 limiter.enabled = False
 
-engine = create_engine(
-    "sqlite://",
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
+# Tests run on in-memory SQLite by default. CI also runs them against real
+# Postgres (production's database) by setting OTB_TEST_DATABASE_URL.
+TEST_DATABASE_URL = os.environ.get("OTB_TEST_DATABASE_URL", "sqlite://")
+if TEST_DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(
+        TEST_DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+else:
+    engine = create_engine(TEST_DATABASE_URL)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 

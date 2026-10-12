@@ -3,11 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>OnTheBlock | AI Budget Itinerary & Hotspot Planner</title>
+    <title>On the Block · Plan your day on a budget</title>
+    <meta name="theme-color" content="#b70011" />
+    <meta name="description" content="Discover great places and plan days out that fit your budget." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      .splash { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; background: #b70011; color: #fff; font: 800 30px/1 Inter, system-ui, sans-serif; letter-spacing: -0.03em; }
+      .splash svg { width: 72px; height: auto; }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Launch splash, shown while the app loads. React replaces it on mount. -->
+      <div class="splash" role="status" aria-label="Loading On the Block">
+        <svg viewBox="7 7 34 38" aria-hidden="true"><path fill="#fff" fill-rule="evenodd" d="M18.34 9.66a8 8 0 0 1 11.32 0l8.68 8.68a8 8 0 0 1 0 11.32L24 44 9.66 29.66a8 8 0 0 1 0-11.32ZM20.5 19h7a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2Z"/></svg>
+        <span>On the Block</span>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

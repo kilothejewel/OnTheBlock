@@ -1,0 +1,27 @@
+# Render blueprint for the On the Block API (free web service).
+# In Render: New > Blueprint > pick this repository. Values marked
+# "sync: false" are asked for during setup and never stored in git.
+services:
+  - type: web
+    name: ontheblock-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    # --proxy-headers: Render sits in front of the app, so trust its
+    # X-Forwarded-For header to see each visitor's real IP (rate limits are per IP).
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"
+    healthCheckPath: /health
+    # Continuous deployment: deploy each new commit only after its GitHub
+    # checks (.github/workflows/ci.yml) have passed.
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: OTB_DATABASE_URL # Postgres connection string from Neon or Supabase
+        sync: false
+      - key: OTB_SECRET_KEY # signs login tokens
+        generateValue: true
+      - key: OTB_FRONTEND_ORIGINS # the live site's address, e.g. https://ontheblock.netlify.app
+        sync: false
+      - key: OTB_OPENAI_API_KEY # optional: leave empty for demo itineraries
+        sync: false
+      - key: OTB_GOOGLE_PLACES_API_KEY # optional: leave empty for demo places
+        sync: false

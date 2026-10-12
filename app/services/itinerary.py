@@ -1,10 +1,47 @@
 import asyncio
 import json
-from typing import Dict, Any, List, Optional
+import re
+from typing import Dict, Any, List
 from openai import AsyncOpenAI
+from app.core.cities import City, get_city
 from app.core.config import settings
 from app.schemas.itinerary import ItineraryGenerate
+from app.services.demo_places import demo_slot
 from app.services.places import places_service
+
+# Whole words only, so "barbecue" doesn't count as a request for bars.
+NIGHTLIFE_RE = re.compile(r"\b(nightlife|bars?|clubs?|clubbing|party|drinks|cocktails?|dancing)\b")
+
+# Demo itinerary: per-person costs in USD by slot and budget, converted to the
+# city's currency with its approximate rate.
+DEMO_COSTS_USD = {
+    "breakfast": {"$": 8, "$$": 15, "$$$": 30},
+    "activity": {"$": 0, "$$": 15, "$$$": 30},
+    "lunch": {"$": 15, "$$": 30, "$$$": 70},
+    "dinner": {"$": 20, "$$": 45, "$$$": 120},
+    "nightlife": {"$": 15, "$$": 35, "$$$": 90},
+}
+DEMO_DAY = [("09:00 AM", "breakfast"), ("11:00 AM", "activity"), ("01:00 PM", "lunch"), ("07:00 PM", "dinner")]
+DEMO_NIGHT = ("10:00 PM", "nightlife")
+DEMO_COPY = {
+    "breakfast": ("Coffee and breakfast", "Start the day at {name}, a favourite in {area}."),
+    "activity": ("Explore", "Spend the late morning at {name} in {area}."),
+    "lunch": ("Lunch", "Lunch at {name}, one of {area}'s go-to spots."),
+    "dinner": ("Dinner", "Settle in for dinner at {name} in {area}."),
+    "nightlife": ("Night out", "End the night at {name} in {area}."),
+}
+# Round demo costs to amounts people would actually quote in each currency.
+COST_STEPS = {"JPY": 100, "ZAR": 10}
+
+
+def wants_nightlife(preferences: str) -> bool:
+    return bool(NIGHTLIFE_RE.search((preferences or "").lower()))
+
+
+def local_cost(usd: float, city: City) -> int:
+    step = COST_STEPS.get(city.currency, 1)
+    return int(round(usd * city.usd_rate / step) * step)
+
 
 class ItineraryService:
     def __init__(self):
@@ -19,16 +56,14 @@ class ItineraryService:
         """
         Generate a budget-based itinerary using OpenAI (settings.OPENAI_MODEL) grounded in real Google Places candidates.
         """
-        # Fallback to mock generation if OpenAI client is not initialized
-        if not self.client:
-            return self._get_mock_itinerary(params)
+        city = get_city(params.city)
 
-        # Check preferences for nightlife/bars/clubs keywords
-        pref_lower = (params.preferences or "").lower()
-        include_nightlife = any(kw in pref_lower for kw in ["nightlife", "bar", "club", "party"])
+        # Fall back to the city's demo itinerary if OpenAI is not configured
+        if not self.client:
+            return self._get_demo_itinerary(params, city)
 
         categories = ["breakfast", "lunch", "dinner"]
-        if include_nightlife:
+        if wants_nightlife(params.preferences):
             categories.append("nightlife")
 
         # Fetch candidate places for each day and slot.
@@ -42,7 +77,7 @@ class ItineraryService:
             results = await asyncio.gather(
                 *(
                     places_service.search_places_for_slot(
-                        params.destination,
+                        city,
                         category,
                         params.budget,
                         # Over-fetch so enough candidates survive de-duplication
@@ -97,7 +132,7 @@ class ItineraryService:
 
         prompt = f"""
         Generate a travel itinerary based on the following preferences:
-        - Destination: {params.destination}
+        - Destination: {city.name}
         - Budget Level: {params.budget} (where $ is budget/cheap, $$ is moderate, $$$ is luxury)
         - Duration: {params.duration_days} day(s)
         - Special Preferences/Vibes: {params.preferences or 'None specified'}
@@ -105,7 +140,7 @@ class ItineraryService:
         Candidate Places to Choose From (by day and slot):
         {candidates_json}
 
-        The itinerary must be realistic and strictly respect the budget. Specify reasonable estimated costs in USD for each item.
+        The itinerary must be realistic and strictly respect the budget. Estimate a cost per person for each item, as a whole number in {city.currency}.
         """
 
         system_instruction = """
@@ -130,7 +165,7 @@ class ItineraryService:
                     "time": "e.g., 09:00 AM",
                     "activity": "Name of the activity or place",
                     "description": "Short, engaging description of what to do there, matching the requested vibe.",
-                    "estimated_cost": 25, // integer estimation in USD
+                    "estimated_cost": 25, // whole number, per person, in the currency given in the request
                     "location": "Name of the place or landmark",
                     "google_place_id": "Exact google_place_id from candidate list, or null for general activities"
                 }
@@ -148,7 +183,7 @@ class ItineraryService:
                 response_format={"type": "json_object"},
                 temperature=0.7
             )
-            
+
             content = response.choices[0].message.content
             itinerary_data = json.loads(content)
 
@@ -165,11 +200,19 @@ class ItineraryService:
             itinerary_data["items"] = self._validate_and_enrich_items(
                 itinerary_data.get("items", []), candidate_lookup
             )
+            # Facts about the request come from the request, not the model.
+            itinerary_data.update(
+                destination=city.name,
+                city=city.slug,
+                currency=city.currency,
+                budget=params.budget,
+                duration_days=params.duration_days,
+            )
             return itinerary_data
 
         except Exception as e:
             print(f"Error calling OpenAI API: {e}")
-            return self._get_mock_itinerary(params)
+            return self._get_demo_itinerary(params, city)
 
     def _validate_and_enrich_items(
         self,
@@ -215,65 +258,51 @@ class ItineraryService:
 
         return validated_items
 
-    def _get_mock_itinerary(self, params: ItineraryGenerate) -> Dict[str, Any]:
-        """Fallback mock itinerary generator when OpenAI key is missing."""
-        print("Using mock data for Itinerary generation...")
-        
-        # Build items list based on duration days
-        items = []
-        activities_pool = {
-            "$": [
-                {"activity": "Morning Jog & Local Coffee", "location": "Organic Garden Bowls", "description": "Grab a cheap smoothie and jog along the beach or park.", "cost": 8},
-                {"activity": "Explore Free Public Parks/Beaches", "location": "Crandon Park Beach", "description": "Soak up the sun, swim, or read a book by the water.", "cost": 0},
-                {"activity": "Food Truck Lunch Caravan", "location": "Wynwood Food Truck Rally", "description": "Grab delicious tacos or empanadas from local street vendors.", "cost": 12},
-                {"activity": "Self-Guided Street Art Tour", "location": "Wynwood Arts District", "description": "Walk around and take photos of the world-famous murals.", "cost": 0},
-                {"activity": "Chill Sunset Picnic", "location": "South Pointe Park", "description": "Bring some grocery snacks and enjoy the ocean breeze as the sun sets.", "cost": 10},
-                {"activity": "Live Jazz night (No cover)", "location": "Lagniappe", "description": "Sip a draft beer and listen to local bands in a backyard setting.", "cost": 15}
-            ],
-            "$$": [
-                {"activity": "Aesthetic Brunch", "location": "The Block Cafe & Bistro", "description": "Enjoy artisanal avocado toast and premium pour-over coffee.", "cost": 22},
-                {"activity": "Museum Tour", "location": "Pérez Art Museum Miami (PAMM)", "description": "Explore modern and contemporary international art.", "cost": 18},
-                {"activity": "Waterfront Lunch", "location": "The Rusty Pelican", "description": "Eat fresh seafood with a beautiful view of the skyline.", "cost": 35},
-                {"activity": "Kayaking/Paddleboarding", "location": "Key Biscayne Kayaks", "description": "Rent a board and explore the calm bay waters.", "cost": 25},
-                {"activity": "Trendy Dinner & Drinks", "location": "Wynwood Art Tavern", "description": "Indulge in fusion tapas and handcrafted cocktails.", "cost": 45},
-                {"activity": "Rooftop Lounge Hangout", "location": "Sunset Lounge Rooftop", "description": "Have drinks with a panoramic view of the neon lit city.", "cost": 30}
-            ],
-            "$$$": [
-                {"activity": "VIP Sunrise Spa Session", "location": "The Standard Spa", "description": "Treat yourself to hydrotherapy and a massage.", "cost": 150},
-                {"activity": "Private Yacht/Boat Charter", "location": "Miami Yacht Charters", "description": "Private cruise around Biscayne Bay with champagne.", "cost": 250},
-                {"activity": "Fine Dining Omakase Lunch", "location": "Hiden Miami", "description": "Exquisite multi-course chef's choice sushi selection.", "cost": 120},
-                {"activity": "High-End Designer Shopping", "location": "Design District", "description": "Browse luxury boutiques and high-fashion flagships.", "cost": 0},
-                {"activity": "Michelin Star Dinner", "location": "L'Atelier de Joël Robuchon", "description": "Exceptional tasting menu from award-winning chefs.", "cost": 200},
-                {"activity": "Elite VIP Club Experience", "location": "LIV Nightclub", "description": "Premium table service and dancing to world-class DJs.", "cost": 180}
-            ]
-        }
+    def _get_demo_itinerary(self, params: ItineraryGenerate, city: City) -> Dict[str, Any]:
+        """Demo itinerary from the city's demo places, used when OpenAI is not configured."""
+        print(f"Using demo data for an itinerary in {city.name}...")
 
-        # Select pool based on budget
-        pool = activities_pool.get(params.budget, activities_pool["$$"])
-        
-        # Generate items for each day
-        day_sequence = ["Morning", "Afternoon", "Evening"]
-        for d in range(1, params.duration_days + 1):
-            for i, period in enumerate(day_sequence):
-                act_idx = ((d - 1) * 3 + i) % len(pool)
-                act = pool[act_idx]
+        schedule = list(DEMO_DAY)
+        if wants_nightlife(params.preferences):
+            schedule.append(DEMO_NIGHT)
+
+        # Rotate through each slot's places so lunch and dinner (and later
+        # days) don't repeat a venue while there are others left.
+        next_index: Dict[str, int] = {}
+        items = []
+        for day in range(1, params.duration_days + 1):
+            for time, slot in schedule:
+                pool = demo_slot(city, slot)
+                key = ",".join(sorted({p["category"] for p in pool}))
+                index = next_index.get(key, 0)
+                next_index[key] = index + 1
+                place = pool[index % len(pool)]
+
+                area = place["address"].split(",")[0]
+                activity, description = DEMO_COPY[slot]
                 items.append({
-                    "day": d,
-                    "time": "09:00 AM" if period == "Morning" else ("01:00 PM" if period == "Afternoon" else "07:00 PM"),
-                    "activity": act["activity"],
-                    "description": act["description"],
-                    "estimated_cost": act["cost"],
-                    "location": act["location"],
-                    "google_place_id": f"mock_place_{act_idx + 1}"
+                    "day": day,
+                    "time": time,
+                    "activity": activity,
+                    "description": description.format(name=place["name"], area=area),
+                    "estimated_cost": local_cost(DEMO_COSTS_USD[slot][params.budget], city),
+                    "location": place["name"],
+                    "address": place["address"],
+                    "google_place_id": place["google_place_id"],
+                    "category": place["category"],
+                    "verified": False,
                 })
 
-        title_pref = f" ({params.preferences})" if params.preferences else ""
+        days = params.duration_days
         return {
-            "title": f"Ultimate {params.budget} Vibe in {params.destination}{title_pref}",
-            "destination": params.destination,
+            "title": f"A day out in {city.name}" if days == 1 else f"{days} days in {city.name}",
+            "destination": city.name,
+            "city": city.slug,
+            "currency": city.currency,
             "budget": params.budget,
-            "duration_days": params.duration_days,
-            "items": items
+            "duration_days": days,
+            "items": items,
+            "demo": True,
         }
 
 itinerary_service = ItineraryService()

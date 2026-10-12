@@ -3,6 +3,8 @@ from typing import List, Optional
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+LOCAL_DEV_ORIGIN_REGEX = r"^http://(localhost|127\.0\.0\.1|\[::1\]):\d+$"
+
 
 class Settings(BaseSettings):
     #Core Settings
@@ -11,20 +13,21 @@ class Settings(BaseSettings):
     API_V1_STR: str ="/api/v1"
 
     #Database Settings
-    POSTGRES_SERVER: str
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_DB: str
-    # Optional full SQLAlchemy URL. When set (OTB_DATABASE_URL), it overrides the
-    # POSTGRES_* components above -- useful for SQLite in local dev / tests.
+    # Full SQLAlchemy URL (OTB_DATABASE_URL), e.g. a hosted Postgres URL from
+    # Neon or Supabase. When unset, it is built from the POSTGRES_* parts, and
+    # without those the app uses a local SQLite file.
     DATABASE_URL: Optional[str] = None
+    POSTGRES_SERVER: Optional[str] = None
+    POSTGRES_USER: Optional[str] = None
+    POSTGRES_PASSWORD: Optional[str] = None
+    POSTGRES_DB: Optional[str] = None
 
-    #OpenAI Settings
-    OPENAI_API_KEY: str
+    #OpenAI Settings (optional: without a key, itineraries use demo data)
+    OPENAI_API_KEY: Optional[str] = None
     OPENAI_MODEL: str = "gpt-4o-mini"
 
-    #Google Places Settings
-    GOOGLE_PLACES_API_KEY: str
+    #Google Places Settings (optional: without a key, places use demo data)
+    GOOGLE_PLACES_API_KEY: Optional[str] = None
 
     #Auth / JWT Settings
     SECRET_KEY: str
@@ -32,22 +35,34 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
 
     #CORS Settings
-    # Comma-separated list of origins allowed to call the API from a browser.
-    FRONTEND_ORIGINS: str = "http://localhost:5173"
+    # Comma-separated list of origins allowed to call the API from a browser,
+    # e.g. the live site's address in production.
+    FRONTEND_ORIGINS: str = "http://localhost:5273,http://127.0.0.1:5273"
+    # Optional regex for extra allowed origins. Off by default so production
+    # only accepts FRONTEND_ORIGINS; local .env files set LOCAL_DEV_ORIGIN_REGEX
+    # so the dev site works on any local port.
+    FRONTEND_ORIGIN_REGEX: Optional[str] = None
 
     @property
     def frontend_origins(self) -> List[str]:
         """FRONTEND_ORIGINS parsed into a list of individual origins."""
-        return [o.strip() for o in self.FRONTEND_ORIGINS.split(",") if o.strip()]
+        return [o.strip().rstrip("/") for o in self.FRONTEND_ORIGINS.split(",") if o.strip()]
 
     @model_validator(mode="after")
     def _assemble_database_url(self) -> "Settings":
-        """Build the Postgres URL from components unless an explicit URL was given."""
+        """Use the explicit URL, else build one from the POSTGRES_* parts, else local SQLite."""
         if not self.DATABASE_URL:
-            self.DATABASE_URL = (
-                f"postgresql+psycopg2://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
-                f"@{self.POSTGRES_SERVER}/{self.POSTGRES_DB}"
-            )
+            parts = (self.POSTGRES_USER, self.POSTGRES_PASSWORD, self.POSTGRES_SERVER, self.POSTGRES_DB)
+            if all(parts):
+                self.DATABASE_URL = (
+                    f"postgresql+psycopg2://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
+                    f"@{self.POSTGRES_SERVER}/{self.POSTGRES_DB}"
+                )
+            else:
+                self.DATABASE_URL = "sqlite:///./ontheblock.db"
+        # Hosting providers hand out "postgres://" URLs, which SQLAlchemy 2 rejects.
+        if self.DATABASE_URL.startswith("postgres://"):
+            self.DATABASE_URL = "postgresql://" + self.DATABASE_URL[len("postgres://"):]
         return self
 
     model_config = SettingsConfigDict(

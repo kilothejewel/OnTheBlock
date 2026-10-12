@@ -1,0 +1,31 @@
+# Monthly dependency-update pull requests, grouped so each ecosystem opens one
+# PR at a time. CI runs on each, so an update only merges if everything passes.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      python:
+        patterns: ["*"]
+    ignore:
+      # passlib 1.7.x breaks on bcrypt 4.1+ (see requirements.txt)
+      - dependency-name: bcrypt
+        versions: [">=4.1"]
+
+  - package-ecosystem: npm
+    directory: /web
+    schedule:
+      interval: monthly
+    groups:
+      web:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]

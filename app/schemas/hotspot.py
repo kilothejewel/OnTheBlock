@@ -6,6 +6,7 @@ class HotspotBase(BaseModel):
     google_place_id: str
     name: str
     rating: Optional[float] = None
+    user_rating_count: Optional[int] = None
     address: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
