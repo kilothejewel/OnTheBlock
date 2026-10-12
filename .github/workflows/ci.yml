@@ -1,0 +1,85 @@
+name: CI
+
+# Every pull request and every push to main must pass these checks. Render only
+# deploys main once they pass (render.yaml: autoDeployTrigger: checksPass), and
+# Netlify builds a preview of each pull request.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A newer push to the same branch cancels the run it replaces.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    name: API tests (${{ matrix.database }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        # SQLite is the fast local default; Postgres is what production runs on.
+        database: [sqlite, postgres]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: otb
+          POSTGRES_PASSWORD: otb
+          POSTGRES_DB: otb_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U otb -d otb_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      OTB_TEST_DATABASE_URL: ${{ matrix.database == 'postgres' && 'postgresql://otb:otb@localhost:5432/otb_test' || 'sqlite://' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest -q
+
+  web:
+    name: Web lint and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Production build
+        run: npm run build
+        env:
+          VITE_API_BASE: https://api.example.invalid/api/v1

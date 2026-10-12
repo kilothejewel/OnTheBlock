@@ -11,6 +11,9 @@ services:
     # X-Forwarded-For header to see each visitor's real IP (rate limits are per IP).
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"
     healthCheckPath: /health
+    # Continuous deployment: deploy each new commit only after its GitHub
+    # checks (.github/workflows/ci.yml) have passed.
+    autoDeployTrigger: checksPass
     envVars:
       - key: OTB_DATABASE_URL # Postgres connection string from Neon or Supabase
         sync: false
