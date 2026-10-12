@@ -19,6 +19,7 @@ os.environ.setdefault("OTB_OPENAI_API_KEY", "your_openai_api_key")
 os.environ.setdefault("OTB_GOOGLE_PLACES_API_KEY", "your_google_places_api_key")
 os.environ.setdefault("OTB_SECRET_KEY", "test-secret-key-not-for-production")
 os.environ.setdefault("OTB_DATABASE_URL", "sqlite://")
+os.environ.setdefault("OTB_FRONTEND_ORIGIN_REGEX", r"^http://(localhost|127\.0\.0\.1|\[::1\]):\d+$")
 
 import pytest
 from fastapi.testclient import TestClient

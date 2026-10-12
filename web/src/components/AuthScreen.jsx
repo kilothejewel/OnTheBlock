@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowRight, LoaderCircle, CircleAlert } from 'lucide-react';
 import Logo from './Logo';
 import { AUTH_PHOTO } from '../lib/places';
@@ -6,6 +6,16 @@ import { AUTH_PHOTO } from '../lib/places';
 export default function AuthScreen({ authMode, onModeChange, authForm, setAuthForm, authLoading, authError, onSubmit }) {
   // If the photo can't load (offline, blocked), the panel stays solid brand red.
   const [photoFailed, setPhotoFailed] = useState(false);
+  // A hosted API on a free plan sleeps when idle; say so if a request is slow.
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (!authLoading) return undefined;
+    const timer = setTimeout(() => setSlow(true), 5000);
+    return () => {
+      clearTimeout(timer);
+      setSlow(false);
+    };
+  }, [authLoading]);
   const isLogin = authMode === 'login';
   const update = (key) => (e) => setAuthForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -127,6 +137,11 @@ export default function AuthScreen({ authMode, onModeChange, authForm, setAuthFo
                 <>{isLogin ? 'Log in' : 'Create account'} <ArrowRight size={18} aria-hidden="true" /></>
               )}
             </button>
+            {authLoading && slow && (
+              <p className="field__hint" role="status" style={{ textAlign: 'center' }}>
+                Waking up the server. On the free hosting plan this can take up to a minute.
+              </p>
+            )}
           </form>
         </div>
       </main>

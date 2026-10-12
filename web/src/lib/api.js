@@ -2,6 +2,12 @@
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/v1';
 
+if (import.meta.env.PROD && !import.meta.env.VITE_API_BASE) {
+  // A production build without VITE_API_BASE would send every request to the
+  // visitor's own computer. Set it in the host's build settings (e.g. Netlify).
+  console.error('VITE_API_BASE was not set at build time; API calls will go to localhost and fail.');
+}
+
 export class ApiError extends Error {
   constructor(message, status) {
     super(message);
