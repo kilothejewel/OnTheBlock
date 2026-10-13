@@ -244,6 +244,15 @@ a.sr-only:focus {
   color: var(--text-3); pointer-events: none;
 }
 .input-group .input { padding-left: 44px; }
+.input-group .input--with-action { padding-left: 14px; padding-right: 52px; }
+.input-group__action {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  width: 44px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--text-3);
+}
+.input-group__action:hover { color: var(--text); background: var(--surface-2); }
 
 .form-error {
   display: flex; gap: 8px; align-items: flex-start;

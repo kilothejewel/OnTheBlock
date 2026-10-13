@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight, LoaderCircle, CircleAlert } from 'lucide-react';
+import { ArrowRight, LoaderCircle, CircleAlert, Eye, EyeOff } from 'lucide-react';
 import Logo from './Logo';
 import { AUTH_PHOTO } from '../lib/places';
 
@@ -16,6 +16,7 @@ export default function AuthScreen({ authMode, onModeChange, authForm, setAuthFo
       setSlow(false);
     };
   }, [authLoading]);
+  const [showPassword, setShowPassword] = useState(false);
   const isLogin = authMode === 'login';
   const update = (key) => (e) => setAuthForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -109,17 +110,29 @@ export default function AuthScreen({ authMode, onModeChange, authForm, setAuthFo
 
             <div className="field">
               <label className="field__label" htmlFor="auth-password">Password</label>
-              <input
-                id="auth-password"
-                className="input"
-                type="password"
-                autoComplete={isLogin ? 'current-password' : 'new-password'}
-                value={authForm.password}
-                onChange={update('password')}
-                required
-                minLength={isLogin ? undefined : 8}
-                aria-describedby={isLogin ? undefined : 'auth-password-hint'}
-              />
+              <div className="input-group">
+                <input
+                  id="auth-password"
+                  className="input input--with-action"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete={isLogin ? 'current-password' : 'new-password'}
+                  value={authForm.password}
+                  onChange={update('password')}
+                  required
+                  minLength={isLogin ? undefined : 8}
+                  aria-describedby={isLogin ? undefined : 'auth-password-hint'}
+                />
+                <button
+                  type="button"
+                  className="input-group__action"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                  aria-controls="auth-password"
+                  onClick={() => setShowPassword((s) => !s)}
+                >
+                  {showPassword ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
+                </button>
+              </div>
               {!isLogin && <span id="auth-password-hint" className="field__hint">At least 8 characters.</span>}
             </div>
 

@@ -194,3 +194,39 @@ def test_add_missing_columns_upgrades_an_existing_table():
 
     columns = {c["name"] for c in inspect(engine).get_columns("itineraries")}
     assert {"city", "currency"} <= columns
+
+
+@pytest.mark.parametrize(
+    "query, category",
+    [("trendy cafes", "cafe"), ("rooftop bars", "nightlife"), ("museums", "art"), ("brunch spots", "cafe")],
+)
+def test_demo_search_only_returns_the_kind_of_place_asked_for(query, category):
+    from app.services.demo_places import demo_search
+
+    places = demo_search(get_city("cape-town"), query)
+    assert places, f"expected demo results for {query!r}"
+    assert all(p["category"] == category for p in places)
+    assert "Kirstenbosch National Botanical Garden" not in [p["name"] for p in places]
+
+
+def test_demo_search_with_no_match_returns_nothing():
+    from app.services.demo_places import demo_search
+
+    assert demo_search(get_city("london"), "bowling alley") == []
+
+
+def test_demo_search_finds_a_place_by_name():
+    from app.services.demo_places import demo_search
+
+    assert [p["name"] for p in demo_search(get_city("tokyo"), "golden gai")] == ["Golden Gai"]
+
+
+def test_live_search_filters_to_the_requested_type(live_google):
+    asyncio.run(places_service.search_places("trendy cafes", get_city("london")))
+    asyncio.run(places_service.search_places("brunch spots", get_city("london")))
+    cafes_body, brunch_body = live_google[0][2], live_google[1][2]
+
+    assert cafes_body["includedType"] == "cafe"
+    assert cafes_body["strictTypeFiltering"] is True
+    # Brunch is often served by restaurants, so it isn't restricted to cafés.
+    assert "includedType" not in brunch_body

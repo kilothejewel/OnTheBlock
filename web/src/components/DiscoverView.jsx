@@ -1,4 +1,4 @@
-import { Search, LoaderCircle, Compass, Info } from 'lucide-react';
+import { Search, SearchX, LoaderCircle, Compass, Info } from 'lucide-react';
 import PlaceCard from './PlaceCard';
 import CityPicker from './CityPicker';
 import { EmptyState } from './Feedback';
@@ -19,7 +19,7 @@ function SkeletonCard() {
   );
 }
 
-export default function DiscoverView({ city, onCityChange, searchQuery, setSearchQuery, onSearch, searchLoading, places, savedHotspots, onToggleSave }) {
+export default function DiscoverView({ city, onCityChange, searchedFor, searchQuery, setSearchQuery, onSearch, searchLoading, places, savedHotspots, onToggleSave }) {
   const savedIds = new Set(savedHotspots.map((h) => h.google_place_id));
   const cityName = cityBySlug(city)?.name;
   const isDemo = places.length > 0 && places.every((p) => isDemoPlaceId(p.google_place_id));
@@ -61,6 +61,10 @@ export default function DiscoverView({ city, onCityChange, searchQuery, setSearc
         <div className="grid" aria-busy="true">
           {[0, 1, 2].map((i) => <SkeletonCard key={i} />)}
         </div>
+      ) : places.length === 0 && searchedFor ? (
+        <EmptyState icon={SearchX} title={`No matches for “${searchedFor}”`}>
+          Nothing in {cityName} fits that search. Try something broader, like “cafés”, “bars” or “museums”.
+        </EmptyState>
       ) : places.length === 0 ? (
         <EmptyState icon={Compass} title="Start with a search">
           Try a type of place in {cityName}, like “brunch spots” or “rooftop bars”.

@@ -7,6 +7,7 @@ import httpx
 from app.core.cities import City
 from app.core.config import settings
 from app.services.demo_places import demo_search, demo_slot
+from app.services.search_intent import detect_intent
 
 PLACES_API = "https://places.googleapis.com/v1"
 
@@ -121,6 +122,12 @@ class GooglePlacesService:
             "languageCode": "en",
             "pageSize": 20,
         }
+        # Keep results to the kind of place asked for: "trendy cafes" returns
+        # only cafés, not parks or museums that happen to match the text.
+        intent = detect_intent(query)
+        if intent and intent.google_type:
+            body["includedType"] = intent.google_type
+            body["strictTypeFiltering"] = True
         data = await self._request("POST", "places:searchText", field_mask=SEARCH_FIELD_MASK, json=body)
 
         places = []

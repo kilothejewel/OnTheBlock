@@ -10,6 +10,7 @@ starts with "mock_" so the app can label the data as a demo.
 from typing import Any, Dict, List
 
 from app.core.cities import City
+from app.services.search_intent import detect_intent, search_words
 
 # (name, neighbourhood, category, price level 0-4 or None, Google-style types)
 DEMO_PLACES: Dict[str, List[tuple]] = {
@@ -107,14 +108,22 @@ def demo_places(city: City) -> List[Dict[str, Any]]:
 
 
 def demo_search(city: City, query: str) -> List[Dict[str, Any]]:
-    """Demo places ordered so those matching the query's words come first."""
-    words = {w for w in query.lower().replace(",", " ").split() if len(w) > 2}
+    """
+    The city's demo places that fit the query: the kind of place it asks for
+    ("cafes", "rooftop bars"), or a name or type it mentions. No match means
+    no results, rather than unrelated places.
+    """
+    intent = detect_intent(query)
+    words = search_words(query)
 
-    def score(place: Dict[str, Any]) -> int:
-        hay = f"{place['name']} {place['types']} {place['category']}".lower()
-        return sum(1 for w in words if w.rstrip("s") in hay)
+    def matches(place: Dict[str, Any]) -> bool:
+        if intent and place["category"] == intent.category:
+            return True
+        # Whole words only, so "bars" doesn't match "barbecue_restaurant".
+        tokens = set(search_words(f"{place['name']} {place['types'].replace('_', ' ')}"))
+        return any(w in tokens or w.rstrip("s") in tokens for w in words)
 
-    return sorted(demo_places(city), key=score, reverse=True)
+    return [p for p in demo_places(city) if matches(p)]
 
 
 def demo_slot(city: City, slot: str) -> List[Dict[str, Any]]:

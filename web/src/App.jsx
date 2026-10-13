@@ -47,6 +47,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('trendy cafes');
   const [places, setPlaces] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [searchedFor, setSearchedFor] = useState(''); // last query that returned results (or none)
 
   // Itinerary Planner State
   const [city, setCity] = useState(storedCity);
@@ -83,6 +84,7 @@ export default function App() {
     if (slug === city) return;
     setCity(slug);
     setPlaces([]);
+    setSearchedFor('');
     rememberCity(slug);
   };
 
@@ -100,6 +102,7 @@ export default function App() {
     setUsername('');
     setToken('');
     setPlaces([]);
+    setSearchedFor('');
     setSavedHotspots([]);
     setSavedItineraries([]);
     setPreviewItinerary(null);
@@ -216,6 +219,7 @@ export default function App() {
 
     try {
       setPlaces(await api(`/hotspots/recommend?query=${encodeURIComponent(searchQuery.trim())}&city=${city}`));
+      setSearchedFor(searchQuery.trim());
     } catch (err) {
       reportError(err, "Couldn't load places. Please try again.");
     } finally {
@@ -399,6 +403,7 @@ export default function App() {
           <DiscoverView
             city={city}
             onCityChange={changeCity}
+            searchedFor={searchedFor}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             onSearch={handleSearch}
