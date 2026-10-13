@@ -6,6 +6,18 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 LOCAL_DEV_ORIGIN_REGEX = r"^http://(localhost|127\.0\.0\.1|\[::1\]):\d+$"
 
 
+def normalize_database_url(url: str) -> str:
+    """
+    Pin Postgres URLs to the psycopg2 driver this app installs. Hosts hand out
+    "postgres://" or "postgresql://" URLs, and SQLAlchemy 2.1 maps a bare
+    "postgresql://" to psycopg (v3), which isn't installed.
+    """
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg2://" + url[len(prefix):]
+    return url
+
+
 class Settings(BaseSettings):
     #Core Settings
     PROJECT_NAME: str ="OnTheBlock"
@@ -60,9 +72,7 @@ class Settings(BaseSettings):
                 )
             else:
                 self.DATABASE_URL = "sqlite:///./ontheblock.db"
-        # Hosting providers hand out "postgres://" URLs, which SQLAlchemy 2 rejects.
-        if self.DATABASE_URL.startswith("postgres://"):
-            self.DATABASE_URL = "postgresql://" + self.DATABASE_URL[len("postgres://"):]
+        self.DATABASE_URL = normalize_database_url(self.DATABASE_URL)
         return self
 
     model_config = SettingsConfigDict(

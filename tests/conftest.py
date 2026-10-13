@@ -28,6 +28,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.config import normalize_database_url
 from app.core.database import Base, get_db
 from app.core.rate_limit import limiter
 from app.main import app
@@ -46,7 +47,7 @@ if TEST_DATABASE_URL.startswith("sqlite"):
         poolclass=StaticPool,
     )
 else:
-    engine = create_engine(TEST_DATABASE_URL)
+    engine = create_engine(normalize_database_url(TEST_DATABASE_URL))
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 

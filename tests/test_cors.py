@@ -21,3 +21,17 @@ def test_local_dev_origins_are_allowed_on_any_port(client, origin):
 @pytest.mark.parametrize("origin", ["https://evil.example.com", "http://localhost.evil.com:5273"])
 def test_other_origins_are_rejected(client, origin):
     assert _preflight(client, origin).status_code == 400
+
+
+@pytest.mark.parametrize(
+    "url, expected",
+    [
+        ("postgres://u:p@host/db", "postgresql+psycopg2://u:p@host/db"),
+        ("postgresql://u:p@host/db?sslmode=require", "postgresql+psycopg2://u:p@host/db?sslmode=require"),
+        ("postgresql+psycopg2://u:p@host/db", "postgresql+psycopg2://u:p@host/db"),
+        ("sqlite:///./x.db", "sqlite:///./x.db"),
+    ],
+)
+def test_database_urls_use_the_installed_driver(url, expected):
+    from app.core.config import normalize_database_url
+    assert normalize_database_url(url) == expected
