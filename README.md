@@ -4,7 +4,7 @@
 
 <p align="center"><a href="https://github.com/kilothejewel/OnTheBlock/actions/workflows/ci.yml"><img src="https://github.com/kilothejewel/OnTheBlock/actions/workflows/ci.yml/badge.svg" alt="CI status"></a></p>
 
-**OnTheBlock** is a dual-platform solution (Web Application + Chrome Extension) designed to help users discover trendy places and create budget-based itineraries. Whether you're planning a night out or a weekend trip, OnTheBlock curates the hottest spots for you.
+**OnTheBlock** is a web application designed to help users discover trendy places and create budget-based itineraries. Whether you're planning a night out or a weekend trip, OnTheBlock curates the hottest spots for you.
 
 ## 🚀 Vision
 
