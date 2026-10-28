@@ -2,95 +2,45 @@
 
 <h1 align="center">On the Block</h1>
 
-<p align="center"><a href="https://github.com/kilothejewel/OnTheBlock/actions/workflows/ci.yml"><img src="https://github.com/kilothejewel/OnTheBlock/actions/workflows/ci.yml/badge.svg" alt="CI status"></a></p>
+<p align="center">
+  <a href="https://github.com/kilothejewel/OnTheBlock/actions/workflows/ci.yml"><img src="https://github.com/kilothejewel/OnTheBlock/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
+</p>
 
-**OnTheBlock** is a web application designed to help users discover trendy places and create budget-based itineraries. Whether you're planning a night out or a weekend trip, OnTheBlock curates the hottest spots for you.
+<p align="center"><b>Discover places and plan a day or night out on a budget.</b><br>
+<a href="https://ontheblock.netlify.app">Try it live →</a></p>
 
-## 🚀 Vision
+<!-- Screenshot: add docs/screenshot.png and uncomment.
+<p align="center"><img src="docs/screenshot.png" width="800" alt="On the Block planning a night out in Cape Town"></p>
+-->
 
-- **Discover**: Find trendy places using real-time data.
-- **Plan**: Generate itineraries based on your budget and preferences.
-- **Save**: Keep track of your favorite "Hotspots" and access them anywhere.
-- **Go**: Seamless transition from browsing on the web to on-the-go access via mobile (coming soon).
+On the Block finds real places in Miami, London, Cape Town, Johannesburg and Tokyo, and turns them into a Plan: a short run of Stops near each other, priced in local currency for your Budget tier. Save the places you like and keep your Plans in Trips.
 
-## 🏗️ Architecture & Tech Stack
+## Quickstart
 
-The project allows for code sharing and a unified backend API.
+No API keys needed: without them the app runs on built-in Demo data.
 
-### **Core Stack**
-- **Web App**: [Vite](https://vitejs.dev/) + React - the main platform UI (`web/`).
-- **Backend/API**: [FastAPI](https://fastapi.tiangolo.com/) + [SQLAlchemy](https://www.sqlalchemy.org/) (`app/`).
-- **Database**: PostgreSQL, accessed directly via SQLAlchemy / psycopg2 (SQLite is
-  supported for local dev and tests via `OTB_DATABASE_URL`).
-- **Auth**: Custom email/username + password authentication. Passwords are hashed
-  with bcrypt (passlib) and sessions use signed JWT bearer tokens (python-jose).
-- **Rate limiting**: slowapi, with stricter per-route limits on the OpenAI /
-  Google Places-backed endpoints.
-- **Styling**: Vanilla CSS for a custom, premium feel.
-
-### **Data Source**
-- **Google Places API**: For retrieving up-to-date information on places, ratings, and trends.
-
-### **Structure**
-```text
-OnTheBlock/
-├── app/              # FastAPI backend
-│   ├── core/         # config, database, security (JWT), rate limiting
-│   ├── models/       # SQLAlchemy models
-│   ├── routers/      # auth, hotspots, itineraries
-│   └── services/     # Google Places + OpenAI itinerary generation
-├── tests/            # pytest suite (in-memory SQLite, mocked externals)
-├── web/              # Vite + React web app
-└── README.md
+```bash
+git clone https://github.com/kilothejewel/OnTheBlock.git && cd OnTheBlock
+pip install -r requirements.txt && cp .env.template .env   # then set OTB_DATABASE_URL to SQLite, see CONTRIBUTING.md
+uvicorn app.main:app --reload
+cd web && npm install && cp .env.example .env && npm run dev   # in a second terminal
 ```
 
-## 📱 Mobile Strategy (Future)
-The architecture is designed "API-First". The FastAPI backend is the central brain. Future mobile apps (React Native) will consume the same API endpoints used by the web app, ensuring data consistency and centralized logic.
+Open http://localhost:5273. Full setup, including real data and tests, is in [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## 🛠️ Getting Started
+## Stack
 
-### Prerequisites
-- Python 3.11+
-- Node.js (v18+) and npm
-- PostgreSQL (or use SQLite locally via `OTB_DATABASE_URL`)
+A **FastAPI** + SQLAlchemy API (Postgres, or SQLite locally) behind a **Vite + React** site, using the **Google Places API (New)** for places and photos and **OpenAI** to write Plans. Deployed on Render, Neon and Netlify, with GitHub Actions CI on every pull request.
 
-### Setup
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/your-username/OnTheBlock.git
-   cd OnTheBlock
-   ```
+## Docs
 
-2. **Backend (FastAPI)**:
-   ```bash
-   python -m venv .venv && source .venv/Scripts/activate  # or .venv/bin/activate
-   pip install -r requirements.txt
-   cp .env.template .env    # then fill in OTB_SECRET_KEY, OTB_OPENAI_API_KEY, etc.
-   uvicorn app.main:app --reload
-   ```
+- [Contributing](CONTRIBUTING.md): setup, tests, workflow, project rules
+- [Architecture](docs/architecture.md): how the pieces fit together
+- [Roadmap](docs/roadmap.md): what's next
+- [Glossary](GLOSSARY.md): the words we use
+- [Decisions](docs/adr/): why some things are the way they are
 
-3. **Web App**:
-   ```bash
-   cd web
-   npm install
-   cp .env.example .env     # adjust VITE_API_BASE if the API is not on :8000
-   npm run dev
-   ```
+## License
 
-4. **Tests**:
-   ```bash
-   pytest
-   ```
-   To run the same tests against Postgres, point `OTB_TEST_DATABASE_URL` at a
-   database, e.g. `postgresql://user:pass@localhost:5432/otb_test`.
-
-## Continuous integration and deployment
-
-- **CI** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every
-  pull request and every push to `main`: the API test suite against both SQLite
-  and Postgres 16, and the web app's lint and production build.
-- **CD**: Render deploys the API from `main` only after those checks pass
-  ([`render.yaml`](render.yaml)), and Netlify builds a preview site for each pull
-  request and deploys `main` to production.
-- **Dependabot** opens grouped monthly update PRs for Python, npm and GitHub
-  Actions, each verified by CI.
+[MIT](LICENSE)
