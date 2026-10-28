@@ -11,12 +11,11 @@ import uuid
 import pytest
 from alembic import command
 from alembic.autogenerate import compare_metadata
-from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.pool import StaticPool
 
-from app.core.database import ALEMBIC_INI, migrate
+from app.core.database import alembic_config, migrate
 from app.models import Base
 from tests.conftest import TEST_DATABASE_URL
 
@@ -61,9 +60,7 @@ def test_migrating_an_empty_database_matches_the_models(empty_db):
 def test_every_migration_can_be_downgraded_and_reapplied(empty_db):
     migrate(empty_db)
 
-    config = Config(str(ALEMBIC_INI))
-    config.attributes["connection"] = empty_db
-    command.downgrade(config, "base")
+    command.downgrade(alembic_config(empty_db), "base")
     empty_db.commit()
     assert set(inspect(empty_db).get_table_names()) <= {"alembic_version"}
 

@@ -31,7 +31,7 @@ Then edit `.env`:
 Create the database tables, then start the API:
 
 ```bash
-python -m app.migrate                # applies the migrations in migrations/; safe to re-run
+python -m app.migrate                # applies the migrations in migrations/ (on a fresh database for now)
 uvicorn app.main:app --reload
 ```
 
