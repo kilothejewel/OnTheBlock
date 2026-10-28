@@ -61,6 +61,7 @@ def migrate(bind=engine) -> None:
     bind.commit()
 
 def _is_pre_alembic(conn: Connection) -> bool:
+    """Whether the database has app tables but no alembic_version (built with create_all)."""
     inspector = inspect(conn)
     if inspector.has_table("alembic_version"):
         return False
@@ -68,7 +69,8 @@ def _is_pre_alembic(conn: Connection) -> bool:
 
 def _add_missing_columns(conn: Connection) -> None:
     """
-    Add the nullable columns the models have but the existing tables lack.
+    Add the nullable columns the models have but the existing tables lack,
+    with their indexes.
 
     create_all() never altered existing tables, so a database built with it
     can be missing columns added to the models later. This brings it up to
@@ -81,10 +83,15 @@ def _add_missing_columns(conn: Connection) -> None:
         if not inspector.has_table(table.name):
             continue
         existing = {column["name"] for column in inspector.get_columns(table.name)}
+        added = set()
         for column in table.columns:
             if column.name not in existing and column.nullable:
                 column_type = column.type.compile(dialect=conn.dialect)
                 conn.execute(text(f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {column_type}'))
+                added.add(column.name)
+        for index in table.indexes:
+            if {column.name for column in index.columns} & added:
+                index.create(conn)
 
 def get_db():
     """Dependency to get a local database session."""

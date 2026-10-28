@@ -51,17 +51,19 @@ def schema_drift(conn):
     return compare_metadata(MigrationContext.configure(conn), Base.metadata)
 
 
-def test_migrating_an_empty_database_matches_the_models(empty_db):
-    migrate(empty_db)
-
-    assert schema_drift(empty_db) == []
-    assert {"users", "hotspots", "user_hotspots", "itineraries"} <= set(inspect(empty_db).get_table_names())
+APP_TABLES = ["users", "hotspots", "user_hotspots", "itineraries"]
 
 
-def old_style_database(conn):
-    """Build the schema the pre-Alembic way, missing one nullable column, and add rows."""
+def pre_alembic_database(conn):
+    """
+    Build the schema the pre-Alembic way (create_all) and add a row to every table.
+
+    users.supabase_uid, a nullable column with a unique index, is left out, as on
+    a database built before that column was added to the model.
+    """
     Base.metadata.create_all(conn)
-    conn.execute(text('ALTER TABLE itineraries DROP COLUMN currency'))
+    conn.execute(text("DROP INDEX ix_users_supabase_uid"))
+    conn.execute(text("ALTER TABLE users DROP COLUMN supabase_uid"))
     conn.execute(text(
         "INSERT INTO users (id, username, email, hashed_password) "
         "VALUES (1, 'sam', 'sam@example.com', 'x')"
@@ -78,24 +80,15 @@ def old_style_database(conn):
 
 
 def row_counts(conn):
-    tables = ["users", "hotspots", "user_hotspots", "itineraries"]
-    return {table: conn.execute(text(f"SELECT COUNT(*) FROM {table}")).scalar() for table in tables}
+    """How many rows each app table holds."""
+    return {table: conn.execute(text(f"SELECT COUNT(*) FROM {table}")).scalar() for table in APP_TABLES}
 
 
 def at_head(conn):
+    """Whether the database is stamped at the latest migration."""
     return MigrationContext.configure(conn).get_current_heads() == (
         ScriptDirectory.from_config(alembic_config(conn)).get_current_head(),
     )
-
-
-def test_migrating_a_pre_alembic_database_adopts_it_and_keeps_every_row(empty_db):
-    old_style_database(empty_db)
-
-    migrate(empty_db)
-
-    assert at_head(empty_db)
-    assert schema_drift(empty_db) == []
-    assert row_counts(empty_db) == {"users": 1, "hotspots": 1, "user_hotspots": 1, "itineraries": 1}
 
 
 def schema_snapshot(conn):
@@ -107,8 +100,26 @@ def schema_snapshot(conn):
     })
 
 
+def test_migrating_an_empty_database_matches_the_models(empty_db):
+    migrate(empty_db)
+
+    assert schema_drift(empty_db) == []
+    assert set(APP_TABLES) <= set(inspect(empty_db).get_table_names())
+
+
+def test_migrating_a_pre_alembic_database_adopts_it_and_keeps_every_row(empty_db):
+    pre_alembic_database(empty_db)
+
+    migrate(empty_db)
+
+    assert at_head(empty_db)
+    assert schema_drift(empty_db) == []
+    assert row_counts(empty_db) == {"users": 1, "hotspots": 1, "user_hotspots": 1, "itineraries": 1}
+    assert empty_db.execute(text("SELECT title FROM itineraries WHERE id = 1")).scalar() == "Night out"
+
+
 def test_migrating_twice_changes_nothing_the_second_time(empty_db):
-    old_style_database(empty_db)
+    pre_alembic_database(empty_db)
     migrate(empty_db)
     schema, rows = schema_snapshot(empty_db), row_counts(empty_db)
 
