@@ -1,6 +1,10 @@
+from pathlib import Path
 from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.engine import Connection
 from sqlalchemy.orm import declarative_base, sessionmaker
 from app.core.config import settings
+
+ALEMBIC_INI = Path(__file__).resolve().parents[2] / "alembic.ini"
 
 # Create database engine
 _is_sqlite = settings.DATABASE_URL.startswith("sqlite")
@@ -36,6 +40,28 @@ def add_missing_columns(bind=engine) -> None:
                 if column.name not in existing and column.nullable:
                     column_type = column.type.compile(dialect=bind.dialect)
                     conn.execute(text(f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {column_type}'))
+
+def migrate(bind=engine) -> None:
+    """
+    Bring the database's schema up to the latest migration.
+
+    The one way the schema changes: run on deploy and for local setup
+    (`python -m app.migrate`). Takes an engine or an open connection, and
+    commits when done.
+    """
+    # Imported here: the migration environment imports the models, which import this module.
+    from alembic import command
+    from alembic.config import Config
+
+    if not isinstance(bind, Connection):
+        with bind.connect() as conn:
+            migrate(conn)
+        return
+
+    config = Config(str(ALEMBIC_INI))
+    config.attributes["connection"] = bind
+    command.upgrade(config, "head")
+    bind.commit()
 
 def get_db():
     """Dependency to get a local database session."""
