@@ -22,24 +22,8 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # Declarative base class for models
 Base = declarative_base()
 
-def add_missing_columns(bind=engine) -> None:
-    """
-    Add new nullable columns to tables that already exist.
-
-    create_all() only creates missing tables, so a column added to a model
-    would never reach an existing database. This stopgap covers additive
-    changes until proper migrations (Alembic) are set up.
-    """
-    inspector = inspect(bind)
-    with bind.begin() as conn:
-        for table in Base.metadata.sorted_tables:
-            if not inspector.has_table(table.name):
-                continue
-            existing = {column["name"] for column in inspector.get_columns(table.name)}
-            for column in table.columns:
-                if column.name not in existing and column.nullable:
-                    column_type = column.type.compile(dialect=bind.dialect)
-                    conn.execute(text(f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {column_type}'))
+# The first migration: what a database built by create_all before Alembic is adopted at.
+BASELINE_REVISION = "0001"
 
 def alembic_config(conn: Connection):
     """Alembic config that runs migrations on an open connection (read by migrations/env.py)."""
@@ -54,6 +38,10 @@ def migrate(bind=engine) -> None:
     """
     Bring the database's schema up to the latest migration.
 
+    A database built before Alembic (app tables but no alembic_version) is
+    adopted first: it gets any nullable columns it's missing, then is stamped
+    at the baseline, so the upgrade only runs the migrations after it.
+
     Used for local setup (`python -m app.migrate`); startup and deploy still
     use create_all until they switch over (issue #12). Takes an engine or an
     open connection, and commits when done.
@@ -65,8 +53,38 @@ def migrate(bind=engine) -> None:
             migrate(conn)
         return
 
-    command.upgrade(alembic_config(bind), "head")
+    config = alembic_config(bind)
+    if _is_pre_alembic(bind):
+        _add_missing_columns(bind)
+        command.stamp(config, BASELINE_REVISION)
+    command.upgrade(config, "head")
     bind.commit()
+
+def _is_pre_alembic(conn: Connection) -> bool:
+    inspector = inspect(conn)
+    if inspector.has_table("alembic_version"):
+        return False
+    return any(inspector.has_table(table.name) for table in Base.metadata.sorted_tables)
+
+def _add_missing_columns(conn: Connection) -> None:
+    """
+    Add the nullable columns the models have but the existing tables lack.
+
+    create_all() never altered existing tables, so a database built with it
+    can be missing columns added to the models later. This brings it up to
+    the baseline before it's stamped there. It reads the current models, so
+    it must only run while they still match the baseline: adopt databases
+    before a later migration adds a column.
+    """
+    inspector = inspect(conn)
+    for table in Base.metadata.sorted_tables:
+        if not inspector.has_table(table.name):
+            continue
+        existing = {column["name"] for column in inspector.get_columns(table.name)}
+        for column in table.columns:
+            if column.name not in existing and column.nullable:
+                column_type = column.type.compile(dialect=conn.dialect)
+                conn.execute(text(f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {column_type}'))
 
 def get_db():
     """Dependency to get a local database session."""
