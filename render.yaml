@@ -7,9 +7,12 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
+    # Migrate first, and start the API only if that succeeds: the free plan has
+    # no pre-deploy hook, so a failed migration fails the deploy here and the
+    # previous version keeps serving.
     # --proxy-headers: Render sits in front of the app, so trust its
     # X-Forwarded-For header to see each visitor's real IP (rate limits are per IP).
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"
+    startCommand: python -m app.migrate && uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"
     healthCheckPath: /health
     # Continuous deployment: deploy each new commit only after its GitHub
     # checks (.github/workflows/ci.yml) have passed.

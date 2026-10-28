@@ -23,7 +23,7 @@ No API keys needed: without them the app runs on built-in Demo data.
 ```bash
 git clone https://github.com/kilothejewel/OnTheBlock.git && cd OnTheBlock
 pip install -r requirements.txt && cp .env.template .env   # then set OTB_DATABASE_URL to SQLite, see CONTRIBUTING.md
-uvicorn app.main:app --reload
+python -m app.migrate && uvicorn app.main:app --reload
 cd web && npm install && cp .env.example .env && npm run dev   # in a second terminal
 ```
 

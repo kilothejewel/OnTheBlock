@@ -42,9 +42,9 @@ def migrate(bind=engine) -> None:
     adopted first: it gets any nullable columns it's missing, then is stamped
     at the baseline, so the upgrade only runs the migrations after it.
 
-    Used for local setup (`python -m app.migrate`); startup and deploy still
-    use create_all until they switch over (issue #12). Takes an engine or an
-    open connection, and commits when done.
+    The only thing that changes the schema: run by `python -m app.migrate`,
+    locally and before the API starts on deploy (render.yaml). Takes an
+    engine or an open connection, and commits when done.
     """
     from alembic import command
 
