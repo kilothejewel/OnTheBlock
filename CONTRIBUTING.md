@@ -28,7 +28,10 @@ Then edit `.env`:
 2. **Set a secret:** replace `OTB_SECRET_KEY` with the output of `python -c "import secrets; print(secrets.token_urlsafe(32))"`.
 3. **Leave the API key placeholders as they are** to run on Demo data.
 
+Create the database tables, then start the API:
+
 ```bash
+python -m app.migrate                # applies the migrations in migrations/ (on a fresh database for now)
 uvicorn app.main:app --reload
 ```
 
