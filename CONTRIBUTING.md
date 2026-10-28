@@ -70,6 +70,22 @@ To run the API tests against Postgres too, point `OTB_TEST_DATABASE_URL` at a te
 
 Tests should exercise behaviour through the API (see `tests/test_itineraries.py` and `tests/test_places.py`), never call real external services, and pass without any API keys.
 
+## Adding a migration
+
+The schema belongs to the migrations in `migrations/versions/`; the app never creates or alters tables itself. To change it:
+
+1. **Change the model** in `app/models/`.
+2. **Autogenerate a migration** against a database that's at the latest migration (run `python -m app.migrate` first). Revision IDs are numbered, so pass the next one:
+
+   ```bash
+   alembic revision --autogenerate --rev-id 0002 -m "add plan mode"
+   ```
+
+3. **Review the file.** Autogenerate is a draft: check it does only what you meant, that `downgrade()` undoes `upgrade()`, and that a new column on a table with rows is nullable or has a `server_default`. It can't see renames (they come out as a drop and an add) or changes to data, so write those by hand. The previous version keeps serving while a deploy migrates, so the old code must still work on the new schema: add before you remove, and drop a column only in a later release once nothing reads it.
+4. **Run the tests** with `pytest`. `tests/test_migrations.py` checks the migrations build exactly the models' schema and can be downgraded and reapplied. If you can, run them against Postgres too (see above), since that's what production runs.
+
+Render runs `python -m app.migrate` every time it starts the API (each deploy, restart and cold start), so a merged migration is applied automatically.
+
 ## Workflow
 
 1. Find or open an issue. Good starting points are labelled `good first issue` or `help wanted`. Comment so others know you're on it.

@@ -1,5 +1,6 @@
 """
-Schema migrations, tested through the migrate entry point.
+Schema migrations, tested through the migrate entry point, and the app
+startup that leaves the schema to them.
 
 Each test gets its own empty database, so it doesn't clash with the per-test
 create_all/drop_all fixture: a fresh in-memory SQLite database by default, or a
@@ -13,10 +14,13 @@ from alembic import command
 from alembic.autogenerate import compare_metadata
 from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
-from sqlalchemy import create_engine, inspect, text
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, event, inspect, text
+from sqlalchemy.engine import Engine
 from sqlalchemy.pool import StaticPool
 
 from app.core.database import alembic_config, migrate
+from app.main import app
 from app.models import Base
 from tests.conftest import TEST_DATABASE_URL
 
@@ -128,6 +132,30 @@ def test_migrating_twice_changes_nothing_the_second_time(empty_db):
     assert at_head(empty_db)
     assert schema_snapshot(empty_db) == schema
     assert row_counts(empty_db) == rows
+
+
+def test_starting_the_app_leaves_the_schema_to_migrations():
+    """
+    Startup sends no CREATE, ALTER or DROP to any database: migrate owns the schema.
+
+    The app's own database is a fresh in-memory SQLite in tests by default
+    (conftest sets OTB_DATABASE_URL unless it's already set), so any create_all
+    at startup would have tables to create.
+    """
+    schema_changes = []
+
+    def record_schema_changes(conn, cursor, statement, *args):
+        if statement.lstrip().upper().startswith(("CREATE", "ALTER", "DROP")):
+            schema_changes.append(statement)
+
+    event.listen(Engine, "before_cursor_execute", record_schema_changes)
+    try:
+        with TestClient(app):
+            pass
+    finally:
+        event.remove(Engine, "before_cursor_execute", record_schema_changes)
+
+    assert schema_changes == []
 
 
 def test_every_migration_can_be_downgraded_and_reapplied(empty_db):

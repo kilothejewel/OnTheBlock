@@ -1,28 +1,19 @@
-from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from app.core.config import settings
-from app.core.database import engine
 from app.core.rate_limit import limiter, rate_limit_exceeded_handler
-from app.models import Base
 from app.routers.auth import router as auth_router
 from app.routers.hotspots import router as hotspots_router
 from app.routers.itineraries import router as itineraries_router
 from app.routers.places import router as places_router
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Create database tables on startup
-    Base.metadata.create_all(bind=engine)
-    yield
-
+# No schema work at startup: migrations own it (python -m app.migrate; see render.yaml).
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    lifespan=lifespan
 )
 
 # Rate limiting: a global default limit via SlowAPIMiddleware, stricter per-route

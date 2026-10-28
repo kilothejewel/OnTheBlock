@@ -47,7 +47,7 @@ Without `OTB_GOOGLE_PLACES_API_KEY` or `OTB_OPENAI_API_KEY`, the matching servic
 
 ### Database
 
-SQLAlchemy over Postgres in production and SQLite locally (`OTB_DATABASE_URL`). Tables are currently created at startup with `create_all`, which can't change existing tables; moving to Alembic migrations is on the [roadmap](roadmap.md).
+SQLAlchemy over Postgres in production and SQLite locally (`OTB_DATABASE_URL`). Alembic migrations in `migrations/versions/` own the schema; the app never creates or alters tables at startup. `python -m app.migrate` brings a database up to the latest migration, and first adopts a database built before migrations existed (it adds any missing nullable columns, then stamps it at the baseline). Tests check that the migrations produce exactly the models' schema, on SQLite and Postgres.
 
 ## Frontend: `web/`
 
@@ -56,6 +56,6 @@ Vite + React 19 with plain CSS and `lucide-react` icons. `VITE_API_BASE` sets wh
 ## Delivery
 
 - **CI** (`.github/workflows/ci.yml`) runs on every pull request and push to `main`: API tests against SQLite and Postgres 16, and the web app's lint and production build.
-- **API:** Render deploys `main` only after CI passes (`render.yaml`), using Neon Postgres. Secrets are set in Render, never in git.
+- **API:** Render deploys `main` only after CI passes (`render.yaml`), using Neon Postgres. Its start command runs `python -m app.migrate` and starts the API only if that succeeds, so a failed migration fails the deploy and the previous version keeps serving. Secrets are set in Render, never in git.
 - **Web:** Netlify builds a preview for each PR and deploys `main` to https://ontheblock.netlify.app.
 - **Dependabot** opens grouped monthly update PRs for Python, npm and GitHub Actions.
