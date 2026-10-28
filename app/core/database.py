@@ -43,7 +43,7 @@ def migrate(bind=engine) -> None:
     at the baseline, so the upgrade only runs the migrations after it.
 
     The only thing that changes the schema: run by `python -m app.migrate`,
-    locally and before the API starts on deploy (render.yaml). Takes an
+    locally and before the API starts on Render (render.yaml). Takes an
     engine or an open connection, and commits when done.
     """
     from alembic import command

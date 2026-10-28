@@ -9,8 +9,7 @@ from app.routers.hotspots import router as hotspots_router
 from app.routers.itineraries import router as itineraries_router
 from app.routers.places import router as places_router
 
-# No schema work at startup: migrations own it (python -m app.migrate, run
-# before the API starts on deploy; see render.yaml).
+# No schema work at startup: migrations own it (python -m app.migrate; see render.yaml).
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,

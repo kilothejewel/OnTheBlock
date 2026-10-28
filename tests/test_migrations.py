@@ -138,8 +138,9 @@ def test_starting_the_app_leaves_the_schema_to_migrations():
     """
     Startup sends no CREATE, ALTER or DROP to any database: migrate owns the schema.
 
-    The app's own database is a fresh in-memory SQLite in tests (conftest sets
-    OTB_DATABASE_URL), so any create_all at startup would have tables to create.
+    The app's own database is a fresh in-memory SQLite in tests by default
+    (conftest sets OTB_DATABASE_URL unless it's already set), so any create_all
+    at startup would have tables to create.
     """
     schema_changes = []
 

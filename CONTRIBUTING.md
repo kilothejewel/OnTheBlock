@@ -84,7 +84,7 @@ The schema belongs to the migrations in `migrations/versions/`; the app never cr
 3. **Review the file.** Autogenerate is a draft: check it does only what you meant, that `downgrade()` undoes `upgrade()`, and that a new column on a table with rows is nullable or has a `server_default`. It can't see renames (they come out as a drop and an add) or changes to data, so write those by hand. The previous version keeps serving while a deploy migrates, so the old code must still work on the new schema: add before you remove, and drop a column only in a later release once nothing reads it.
 4. **Run the tests** with `pytest`. `tests/test_migrations.py` checks the migrations build exactly the models' schema and can be downgraded and reapplied. If you can, run them against Postgres too (see above), since that's what production runs.
 
-Render runs `python -m app.migrate` before starting the API on every deploy, so a merged migration is applied automatically.
+Render runs `python -m app.migrate` every time it starts the API (each deploy, restart and cold start), so a merged migration is applied automatically.
 
 ## Workflow
 
