@@ -6,7 +6,7 @@ The goal: a launch-ready app for planning a **Day out** or **Night out** on a bu
 |---|---|---|
 | 1 | City picker, Google Places API (New), real photos, local currency, Demo data per city | Done |
 | 1a | Contributor docs: this roadmap, guide, glossary, ADRs, license | In progress |
-| 1b | Alembic migrations | Next |
+| 1b | Alembic migrations | Done |
 | 1c | Store only Google place IDs, add Google attribution | Planned |
 | 2 | Day out and Night out Plans | Planned |
 | 3 | Reliable planner | Planned |
@@ -15,7 +15,7 @@ The goal: a launch-ready app for planning a **Day out** or **Night out** on a bu
 
 ## 1b. Alembic migrations
 
-Replace startup `create_all` with Alembic: a baseline migration matching today's tables, with `alembic upgrade head` run in CI and on deploy. Steps 1c and 2 both change the schema, so this comes first.
+Replaced startup `create_all` with Alembic: a baseline migration matching the existing tables, tested in CI on SQLite and Postgres and run before the API starts on deploy. Databases built before Alembic are adopted automatically. Steps 1c and 2 both change the schema, so this came first.
 
 ## 1c. Store only Google place IDs
 
