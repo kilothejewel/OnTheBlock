@@ -6,6 +6,7 @@ import httpx
 
 from app.core.cities import City
 from app.core.config import settings
+from app.core.http_client import get_http_client
 from app.services.demo_places import demo_search, demo_slot
 
 PLACES_API = "https://places.googleapis.com/v1"
@@ -91,10 +92,9 @@ class GooglePlacesService:
         if field_mask:
             headers["X-Goog-FieldMask"] = field_mask
         try:
-            async with httpx.AsyncClient(timeout=10) as client:
-                response = await client.request(
-                    method, f"{PLACES_API}/{path}", headers=headers, json=json, params=params
-                )
+            response = await get_http_client().request(
+                method, f"{PLACES_API}/{path}", headers=headers, json=json, params=params
+            )
         except httpx.HTTPError as exc:
             raise PlacesError(f"Google Places request failed: {exc}") from exc
         if response.status_code != 200:

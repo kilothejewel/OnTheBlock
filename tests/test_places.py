@@ -1,10 +1,12 @@
 """
 City-aware places: Google Places API (New) parsing, demo data per city and
-photos. Google is never called: the service's _request is replaced with a fake.
+photos. Google is never called: either the service's _request is replaced with
+a fake (live_google), or the shared HTTP client answers for Google (google).
 """
 
 import asyncio
 
+import httpx
 import pytest
 
 from app.core.cities import get_city
@@ -46,6 +48,83 @@ def live_google(monkeypatch):
     monkeypatch.setattr(places_service, "_photo_refs", {})
     monkeypatch.setattr(places_service, "_photo_urls", {})
     return calls
+
+
+DETAILS_PHOTO = {
+    "name": "places/ChIJxyz789uvw012/photos/PHOTO2",
+    "authorAttributions": [{"displayName": "Thandi Snaps", "uri": "https://maps.google.com/thandi"}],
+}
+
+
+@pytest.fixture
+def google(monkeypatch, outbound_http):
+    """Pretend a real key is set, and let the shared HTTP client answer as Google would."""
+
+    def respond(request):
+        path = request.url.path
+        if path == "/v1/places:searchText":
+            return httpx.Response(200, json={"places": [GOOGLE_PLACE]})
+        if path == "/v1/places/ChIJxyz789uvw012":
+            return httpx.Response(200, json={"photos": [DETAILS_PHOTO]})
+        if path.endswith("/media"):
+            return httpx.Response(200, json={"photoUri": "https://lh3.googleusercontent.com/photo"})
+        return httpx.Response(404, json={"error": {"message": "Not found"}})
+
+    outbound_http.respond_with(respond)
+    monkeypatch.setattr(places_service, "api_key", "test-key")
+    monkeypatch.setattr(places_service, "_photo_refs", {})
+    monkeypatch.setattr(places_service, "_photo_urls", {})
+    return outbound_http
+
+
+def test_every_google_request_goes_through_the_shared_client(client, auth_headers, google, monkeypatch):
+    clients_created = []
+    create_client = httpx.AsyncClient.__init__
+
+    def count_new_clients(self, *args, **kwargs):
+        clients_created.append(self)
+        create_client(self, *args, **kwargs)
+
+    monkeypatch.setattr(httpx.AsyncClient, "__init__", count_new_clients)
+
+    search = client.get("/api/v1/hotspots/recommend?query=brunch&city=cape-town", headers=auth_headers)
+    photo_from_search = client.get("/api/v1/places/ChIJabc123def456/photo", headers=auth_headers)
+    photo_from_details = client.get("/api/v1/places/ChIJxyz789uvw012/photo", headers=auth_headers)
+
+    assert [place["name"] for place in search.json()] == ["Test Bistro"]
+    assert photo_from_search.json()["attribution"] == "Sam Lens"
+    assert photo_from_details.json()["attribution"] == "Thandi Snaps"
+    assert [(request.method, request.url.path) for request in google.requests] == [
+        ("POST", "/v1/places:searchText"),
+        ("GET", "/v1/places/ChIJabc123def456/photos/PHOTO1/media"),
+        ("GET", "/v1/places/ChIJxyz789uvw012"),
+        ("GET", "/v1/places/ChIJxyz789uvw012/photos/PHOTO2/media"),
+    ]
+    assert all(request.url.host == "places.googleapis.com" for request in google.requests)
+    assert all(request.headers["X-Goog-Api-Key"] == "test-key" for request in google.requests)
+    assert clients_created == []  # no call opened a client of its own
+
+
+@pytest.mark.parametrize("failure", [httpx.ConnectError("no route to host"), httpx.ReadTimeout("timed out")])
+def test_google_being_unreachable_is_a_clear_502(client, auth_headers, google, failure):
+    def fail(request):
+        raise failure
+
+    google.respond_with(fail)
+
+    resp = client.get("/api/v1/hotspots/recommend?query=cafes&city=london", headers=auth_headers)
+
+    assert resp.status_code == 502
+    assert str(failure) not in resp.json()["detail"]  # internals stay on the server
+
+
+def test_google_refusing_a_request_is_a_clear_502(client, auth_headers, google):
+    google.respond_with(lambda request: httpx.Response(429, json={"error": {"message": "Quota exceeded"}}))
+
+    resp = client.get("/api/v1/hotspots/recommend?query=cafes&city=london", headers=auth_headers)
+
+    assert resp.status_code == 502
+    assert "Quota" not in resp.json()["detail"]
 
 
 def test_parse_place_maps_the_new_api_shape():
