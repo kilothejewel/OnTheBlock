@@ -1,23 +1,34 @@
 """
-Schema migrations, tested through the migrate entry point.
+Schema migrations, tested through the migrate entry point, and the app
+startup that leaves the schema to them.
 
 Each test gets its own empty database, so it doesn't clash with the per-test
 create_all/drop_all fixture: a fresh in-memory SQLite database by default, or a
 throwaway schema on Postgres when OTB_TEST_DATABASE_URL points there (as in CI).
 """
 
+import os
+import subprocess
+import sys
 import uuid
+from pathlib import Path
 
 import pytest
 from alembic import command
 from alembic.autogenerate import compare_metadata
 from alembic.runtime.migration import MigrationContext
-from sqlalchemy import create_engine, inspect, text
+from alembic.script import ScriptDirectory
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, event, inspect, text
+from sqlalchemy.engine import Engine, make_url
 from sqlalchemy.pool import StaticPool
 
 from app.core.database import alembic_config, migrate
+from app.main import app
 from app.models import Base
 from tests.conftest import TEST_DATABASE_URL
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture
@@ -45,16 +56,191 @@ def empty_db():
     engine.dispose()
 
 
+@pytest.fixture
+def empty_db_url(tmp_path):
+    """
+    The URL of an empty database that only this test uses, for code that opens
+    its own connection (the migrate command): a SQLite file, or a throwaway
+    schema on Postgres selected through the URL.
+    """
+    if TEST_DATABASE_URL.startswith("sqlite"):
+        yield f"sqlite:///{(tmp_path / 'app.db').as_posix()}"
+        return
+
+    schema = f"migrations_{uuid.uuid4().hex[:8]}"
+    engine = create_engine(TEST_DATABASE_URL)
+    with engine.connect() as conn:
+        conn.execute(text(f'CREATE SCHEMA "{schema}"'))
+        conn.commit()
+    url = make_url(TEST_DATABASE_URL).update_query_dict({"options": f"-csearch_path={schema}"})
+    try:
+        yield url.render_as_string(hide_password=False)
+    finally:
+        with engine.connect() as conn:
+            conn.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
+            conn.commit()
+        engine.dispose()
+
+
+def run_migrate_command(database_url):
+    """
+    Run `python -m app.migrate` the way Render's start command does: in a new
+    process that has imported nothing but the entry point.
+    """
+    return subprocess.run(
+        [sys.executable, "-m", "app.migrate"],
+        cwd=REPO_ROOT,
+        env={**os.environ, "OTB_DATABASE_URL": database_url},
+        capture_output=True,
+        text=True,
+    )
+
+
 def schema_drift(conn):
     """Differences between the database's schema and the models (empty when they match)."""
     return compare_metadata(MigrationContext.configure(conn), Base.metadata)
+
+
+APP_TABLES = ["users", "hotspots", "user_hotspots", "itineraries"]
+
+
+def pre_alembic_database(conn):
+    """
+    Build the schema the pre-Alembic way (create_all) and add a row to every table.
+
+    users.supabase_uid, a nullable column with a unique index, is left out, as on
+    a database built before that column was added to the model.
+    """
+    Base.metadata.create_all(conn)
+    conn.execute(text("DROP INDEX ix_users_supabase_uid"))
+    conn.execute(text("ALTER TABLE users DROP COLUMN supabase_uid"))
+    conn.execute(text(
+        "INSERT INTO users (id, username, email, hashed_password) "
+        "VALUES (1, 'sam', 'sam@example.com', 'x')"
+    ))
+    conn.execute(text(
+        "INSERT INTO hotspots (id, google_place_id, name) VALUES (1, 'ChIJabc', 'Test Bistro')"
+    ))
+    conn.execute(text("INSERT INTO user_hotspots (user_id, hotspot_id) VALUES (1, 1)"))
+    conn.execute(text(
+        "INSERT INTO itineraries (id, user_id, title, destination, budget, items) "
+        "VALUES (1, 1, 'Night out', 'Tokyo', '$$', '[]')"
+    ))
+    conn.commit()
+
+
+def row_counts(conn):
+    """How many rows each app table holds."""
+    return {table: conn.execute(text(f"SELECT COUNT(*) FROM {table}")).scalar() for table in APP_TABLES}
+
+
+def at_head(conn):
+    """Whether the database is stamped at the latest migration."""
+    return MigrationContext.configure(conn).get_current_heads() == (
+        ScriptDirectory.from_config(alembic_config(conn)).get_current_head(),
+    )
+
+
+def schema_snapshot(conn):
+    """The tables, columns, indexes and foreign keys, as text (column types don't compare by value)."""
+    inspector = inspect(conn)
+    return repr({
+        table: (inspector.get_columns(table), inspector.get_indexes(table), inspector.get_foreign_keys(table))
+        for table in sorted(inspector.get_table_names())
+    })
 
 
 def test_migrating_an_empty_database_matches_the_models(empty_db):
     migrate(empty_db)
 
     assert schema_drift(empty_db) == []
-    assert {"users", "hotspots", "user_hotspots", "itineraries"} <= set(inspect(empty_db).get_table_names())
+    assert set(APP_TABLES) <= set(inspect(empty_db).get_table_names())
+
+
+def test_migrating_a_pre_alembic_database_adopts_it_and_keeps_every_row(empty_db):
+    pre_alembic_database(empty_db)
+
+    migrate(empty_db)
+
+    assert at_head(empty_db)
+    assert schema_drift(empty_db) == []
+    assert row_counts(empty_db) == {"users": 1, "hotspots": 1, "user_hotspots": 1, "itineraries": 1}
+    assert empty_db.execute(text("SELECT title FROM itineraries WHERE id = 1")).scalar() == "Night out"
+
+
+def test_migrating_twice_changes_nothing_the_second_time(empty_db):
+    pre_alembic_database(empty_db)
+    migrate(empty_db)
+    schema, rows = schema_snapshot(empty_db), row_counts(empty_db)
+
+    migrate(empty_db)
+
+    assert at_head(empty_db)
+    assert schema_snapshot(empty_db) == schema
+    assert row_counts(empty_db) == rows
+
+
+def test_the_migrate_command_adopts_a_pre_alembic_database(empty_db_url):
+    """
+    The command must find the app's tables by itself. Nothing has imported the
+    models when it starts, and without them a database built by create_all
+    looks empty, so the baseline would try to create tables that exist.
+    """
+    engine = create_engine(empty_db_url)
+    with engine.connect() as conn:
+        pre_alembic_database(conn)
+
+    result = run_migrate_command(empty_db_url)
+
+    assert result.returncode == 0, result.stderr
+    with engine.connect() as conn:
+        assert at_head(conn)
+        assert schema_drift(conn) == []
+        assert row_counts(conn) == {"users": 1, "hotspots": 1, "user_hotspots": 1, "itineraries": 1}
+    engine.dispose()
+
+
+def test_the_migrate_command_can_run_again_on_an_adopted_database(empty_db_url):
+    """Render runs the command on every restart and cold start, not only on deploy."""
+    engine = create_engine(empty_db_url)
+    with engine.connect() as conn:
+        pre_alembic_database(conn)
+    assert run_migrate_command(empty_db_url).returncode == 0
+    with engine.connect() as conn:
+        schema, rows = schema_snapshot(conn), row_counts(conn)
+
+    result = run_migrate_command(empty_db_url)
+
+    assert result.returncode == 0, result.stderr
+    with engine.connect() as conn:
+        assert at_head(conn)
+        assert schema_snapshot(conn) == schema
+        assert row_counts(conn) == rows
+    engine.dispose()
+
+
+def test_starting_the_app_leaves_the_schema_to_migrations():
+    """
+    Startup sends no CREATE, ALTER or DROP to any database: migrate owns the schema.
+
+    The app's own database is a fresh in-memory SQLite in tests by default
+    (conftest sets OTB_DATABASE_URL unless it's already set), so any create_all
+    at startup would have tables to create.
+    """
+    schema_changes = []
+
+    def record_schema_changes(conn, cursor, statement, *args):
+        if statement.lstrip().upper().startswith(("CREATE", "ALTER", "DROP")):
+            schema_changes.append(statement)
+
+    event.listen(Engine, "before_cursor_execute", record_schema_changes)
+    try:
+        with TestClient(app):
+            pass
+    finally:
+        event.remove(Engine, "before_cursor_execute", record_schema_changes)
+
+    assert schema_changes == []
 
 
 def test_every_migration_can_be_downgraded_and_reapplied(empty_db):
