@@ -48,6 +48,12 @@ def migrate(bind=engine) -> None:
     """
     from alembic import command
 
+    # Put every table on Base.metadata before it's read below. `python -m
+    # app.migrate` imports only this module, and with no models loaded a
+    # pre-Alembic database looks empty, so the baseline would try to create
+    # tables that exist. Imported here: the models import this module.
+    import app.models  # noqa: F401
+
     if not isinstance(bind, Connection):
         with bind.connect() as conn:
             migrate(conn)
