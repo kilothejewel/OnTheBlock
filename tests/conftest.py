@@ -4,8 +4,9 @@ Shared test fixtures.
 The suite runs against an in-memory SQLite database by default (no network). A
 single shared connection is kept alive with SQLAlchemy's StaticPool so every
 session in a test sees the same data. Set OTB_TEST_DATABASE_URL to run the same
-tests against Postgres, as CI does. External services (OpenAI, Google
-Places) are monkeypatched in the tests that need them.
+tests against Postgres, as CI does. The app's shared HTTP client is replaced
+for every test (outbound_http), so Google is answered by the test or not at
+all; OpenAI is monkeypatched in the tests that need it.
 """
 
 import os
@@ -22,12 +23,14 @@ os.environ.setdefault("OTB_SECRET_KEY", "test-secret-key-not-for-production")
 os.environ.setdefault("OTB_DATABASE_URL", "sqlite://")
 os.environ.setdefault("OTB_FRONTEND_ORIGIN_REGEX", r"^http://(localhost|127\.0\.0\.1|\[::1\]):\d+$")
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core import http_client
 from app.core.config import with_postgres_driver
 from app.core.database import Base, get_db
 from app.core.rate_limit import limiter
@@ -57,6 +60,37 @@ def _create_schema():
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
+
+
+class OutboundHttp:
+    """Stands in for the network: records the app's outbound requests and answers them."""
+
+    def __init__(self):
+        self.requests = []
+        self._handler = None
+
+    def respond_with(self, handler):
+        """Answer every request with handler(request): an httpx.Response, or raise an httpx error."""
+        self._handler = handler
+
+    def handle(self, request):
+        self.requests.append(request)
+        if self._handler is None:
+            raise AssertionError(f"A test made an outbound request it did not expect: {request.method} {request.url}")
+        return self._handler(request)
+
+
+@pytest.fixture(autouse=True)
+def outbound_http(monkeypatch):
+    """
+    No test reaches the network. The app's shared HTTP client is swapped for
+    one that answers from a handler (outbound_http.respond_with(...)); without
+    a handler, any outbound request fails the test.
+    """
+    fake = OutboundHttp()
+    client = httpx.AsyncClient(transport=httpx.MockTransport(fake.handle), timeout=http_client.TIMEOUT_SECONDS)
+    monkeypatch.setattr(http_client, "_client", client)
+    return fake
 
 
 @pytest.fixture
