@@ -1,16 +1,13 @@
 """
-City-aware places: Google Places API (New) parsing, demo data per city,
-photos, and the column stopgap. Google is never called: the service's
-_request is replaced with a fake.
+City-aware places: Google Places API (New) parsing, demo data per city and
+photos. Google is never called: the service's _request is replaced with a fake.
 """
 
 import asyncio
 
 import pytest
-from sqlalchemy import create_engine, inspect, text
 
 from app.core.cities import get_city
-from app.core.database import add_missing_columns
 from app.services.places import PlacesError, parse_place, places_service
 
 GOOGLE_PLACE = {
@@ -179,18 +176,3 @@ def test_photo_comes_from_search_and_is_cached(client, auth_headers, live_google
     client.get("/api/v1/places/ChIJabc123def456/photo", headers=auth_headers)
     media_calls = [c for c in live_google if c[1].endswith("/media")]
     assert len(media_calls) == 1  # second request served from the cache
-
-
-def test_add_missing_columns_upgrades_an_existing_table():
-    engine = create_engine("sqlite://")
-    with engine.begin() as conn:
-        conn.execute(text(
-            "CREATE TABLE itineraries (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, "
-            "title VARCHAR NOT NULL, destination VARCHAR NOT NULL, budget VARCHAR NOT NULL, "
-            "duration_days INTEGER, items JSON NOT NULL, created_at DATETIME)"
-        ))
-
-    add_missing_columns(engine)
-
-    columns = {c["name"] for c in inspect(engine).get_columns("itineraries")}
-    assert {"city", "currency"} <= columns
