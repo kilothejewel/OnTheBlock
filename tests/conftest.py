@@ -28,6 +28,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.config import with_postgres_driver
 from app.core.database import Base, get_db
 from app.core.rate_limit import limiter
 from app.main import app
@@ -38,7 +39,7 @@ limiter.enabled = False
 
 # Tests run on in-memory SQLite by default. CI also runs them against real
 # Postgres (production's database) by setting OTB_TEST_DATABASE_URL.
-TEST_DATABASE_URL = os.environ.get("OTB_TEST_DATABASE_URL", "sqlite://")
+TEST_DATABASE_URL = with_postgres_driver(os.environ.get("OTB_TEST_DATABASE_URL", "sqlite://"))
 if TEST_DATABASE_URL.startswith("sqlite"):
     engine = create_engine(
         TEST_DATABASE_URL,
