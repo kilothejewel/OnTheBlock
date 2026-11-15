@@ -6,6 +6,21 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 LOCAL_DEV_ORIGIN_REGEX = r"^http://(localhost|127\.0\.0\.1|\[::1\]):\d+$"
 
 
+def with_postgres_driver(url: str) -> str:
+    """
+    Name psycopg2 in a Postgres URL that doesn't name a driver.
+
+    Hosting providers hand out "postgres://" URLs, which SQLAlchemy 2 rejects.
+    A bare "postgresql://" means whichever driver SQLAlchemy defaults to
+    (psycopg 3 from SQLAlchemy 2.1), not the one in requirements.txt. A URL
+    that names its driver, and any other database, is left alone.
+    """
+    for scheme in ("postgres://", "postgresql://"):
+        if url.startswith(scheme):
+            return "postgresql+psycopg2://" + url[len(scheme):]
+    return url
+
+
 class Settings(BaseSettings):
     #Core Settings
     PROJECT_NAME: str ="OnTheBlock"
@@ -60,9 +75,7 @@ class Settings(BaseSettings):
                 )
             else:
                 self.DATABASE_URL = "sqlite:///./ontheblock.db"
-        # Hosting providers hand out "postgres://" URLs, which SQLAlchemy 2 rejects.
-        if self.DATABASE_URL.startswith("postgres://"):
-            self.DATABASE_URL = "postgresql://" + self.DATABASE_URL[len("postgres://"):]
+        self.DATABASE_URL = with_postgres_driver(self.DATABASE_URL)
         return self
 
     model_config = SettingsConfigDict(

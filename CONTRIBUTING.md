@@ -66,7 +66,7 @@ pytest                      # API tests on in-memory SQLite, with Google and Ope
 cd web && npm run lint && npm run build
 ```
 
-To run the API tests against Postgres too, point `OTB_TEST_DATABASE_URL` at a test database, e.g. `postgresql://user:pass@localhost:5432/otb_test`.
+To run the API tests against Postgres too, point `OTB_TEST_DATABASE_URL` at a test database, e.g. `postgresql://user:pass@localhost:5432/otb_test`. A Postgres URL without a driver (`postgres://` or `postgresql://`) always uses psycopg2, the driver in `requirements.txt`.
 
 Tests should exercise behaviour through the API (see `tests/test_itineraries.py` and `tests/test_places.py`), never call real external services, and pass without any API keys.
 
