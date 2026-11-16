@@ -63,7 +63,7 @@ CI runs all of these on every pull request, and a PR can't merge until they pass
 
 ```bash
 pytest                      # API tests on in-memory SQLite, with Google and OpenAI mocked
-cd web && npm run lint && npm run build
+cd web && npm run lint && npm test && npm run build   # npm test: Vitest, for web/src/lib
 ```
 
 To run the API tests against Postgres too, point `OTB_TEST_DATABASE_URL` at a test database, e.g. `postgresql://user:pass@localhost:5432/otb_test`. A Postgres URL without a driver (`postgres://` or `postgresql://`) always uses psycopg2, the driver in `requirements.txt`.
