@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.rate_limit import limiter
-from app.core.security import get_current_user
+from app.core.security import get_actor
 from app.models.user import User
 from typing import List
 
@@ -25,7 +25,7 @@ async def get_places(
     response: Response,
     ids: str = Query(..., description="Comma-separated Google place IDs, up to 20"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_actor),
 ):
     """
     Display details for the places of a saved Plan or Saved places, in one
@@ -38,7 +38,7 @@ async def get_places(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Give at least one place ID.")
     if len(set(place_ids)) > MAX_DETAILS_IDS:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"At most {MAX_DETAILS_IDS} place IDs per request.")
-    return await places_service.get_details(place_ids, db)
+    return await places_service.get_details(place_ids, db, pool="guests" if current_user.is_guest else "users")
 
 
 @router.get("/{place_id}/photo", response_model=PlacePhoto)
@@ -47,7 +47,7 @@ async def get_place_photo(
     request: Request,
     response: Response,
     place_id: str,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_actor),
 ):
     """
     A place's main Google photo: a short-lived image URL plus the photographer
@@ -55,7 +55,7 @@ async def get_place_photo(
     app is running on demo data). The API key never reaches the browser.
     """
     try:
-        photo = await places_service.get_photo(place_id)
+        photo = await places_service.get_photo(place_id, pool="guests" if current_user.is_guest else "users")
     except PlacesError as e:
         log.warning("photo lookup failed", extra={"place_id": place_id, "error": str(e)})
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Couldn't load the photo.")

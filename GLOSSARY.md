@@ -72,9 +72,13 @@ _Avoid_: Hotspot, favourite
 
 ## Access
 
-**Guest account**:
-A shared one-click login on the live site that gets real Plans under a small shared daily cap.
-_Avoid_: Demo account, demo user
+**Guest**:
+Someone using the app without an Account: a session with no email, name or password that can chat and plan (one Plan a day) but can't keep Trips or Saved places. Signing up or logging in keeps their chats.
+_Avoid_: Guest account, demo account, anonymous user
+
+**Account**:
+A user with a username, email and password, who can keep Trips and Saved places.
+_Avoid_: Registered user, member
 
 **Demo data**:
 Built-in sample Places and Plans shown when the app has no API keys, always labelled as such.

@@ -98,7 +98,14 @@ class Settings(BaseSettings):
 
     #Per-user limits (app/core/rate_limit.py, app/services/plan_quota.py)
     PLANS_PER_USER_PER_DAY: int = 5  # new Plans a signed-in user can start per UTC day
-    GUEST_PLANS_PER_DAY: int = 2  # the lower daily quota for guest users (#125)
+
+    #Guests (app/services/guests.py, #125): using the app without an account
+    GUEST_PLANS_PER_DAY: int = 1  # new Plans per guest per UTC day
+    GUEST_PLANS_PER_IP_DAY: int = 3  # guest Plans per IP per day
+    GUEST_PLANS_DAY_CAP: int = 30  # guest Plans per day for all guests together
+    GUEST_SESSIONS_PER_IP_DAY: int = 3  # new guest sessions per IP per day
+    GUEST_IDLE_DAYS: int = 30  # guests not seen for this long are removed
+    TURNSTILE_SECRET: Optional[str] = None  # Cloudflare Turnstile on POST /auth/guest; off when unset
 
     #Logging and error tracking (app/core/observability.py)
     LOG_FORMAT: Literal["text", "json"] = "text"  # json on Render: one JSON object per line
