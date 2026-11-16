@@ -84,6 +84,12 @@ export function isDemoPlaceId(id) {
   return String(id || '').startsWith('mock_');
 }
 
+// Whether a place's details came from Google Places, so they need the
+// "Google Maps" attribution: a real place ID, not Demo data.
+export function isGooglePlace(placeId) {
+  return Boolean(placeId) && !isDemoPlaceId(placeId);
+}
+
 export function sumCost(items) {
   return items.reduce((total, i) => total + (Number(i.estimated_cost) || 0), 0);
 }
