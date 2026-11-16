@@ -93,6 +93,14 @@ def outbound_http(monkeypatch):
     return fake
 
 
+@pytest.fixture(autouse=True)
+def quota_on_the_test_database(monkeypatch):
+    """The free-quota guard counts in the test database, like everything else."""
+    from app.services.quota import quota
+
+    monkeypatch.setattr(quota, "bind", engine)
+
+
 @pytest.fixture
 def db_session():
     session = TestingSessionLocal()

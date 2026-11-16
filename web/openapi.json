@@ -676,6 +676,60 @@
         }
       }
     },
+    "/api/v1/places": {
+      "get": {
+        "tags": [
+          "places"
+        ],
+        "summary": "Get Places",
+        "description": "Display details for the places of a saved Plan or Saved places, in one\nrequest: name, address, location and types (Place Details Pro). No rating,\nhours or price; no photo (that's /places/{id}/photo, when a Stop is opened).\nQuota refused or Google down: our catalogue's name and Area instead.",
+        "operationId": "get_places_api_v1_places_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "ids",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Comma-separated Google place IDs, up to 20",
+              "title": "Ids"
+            },
+            "description": "Comma-separated Google place IDs, up to 20"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlaceDetails"
+                  },
+                  "title": "Response Get Places Api V1 Places Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/places/{place_id}/photo": {
       "get": {
         "tags": [
@@ -1784,6 +1838,110 @@
           "created_at"
         ],
         "title": "ItineraryResponse"
+      },
+      "PlaceDetails": {
+        "properties": {
+          "google_place_id": {
+            "type": "string",
+            "title": "Google Place Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
+          },
+          "types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Types",
+            "default": []
+          },
+          "maps_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maps Url"
+          },
+          "area": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Area"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "google",
+              "catalogue",
+              "demo",
+              "unknown"
+            ],
+            "title": "Source"
+          },
+          "details_available": {
+            "type": "boolean",
+            "title": "Details Available"
+          }
+        },
+        "type": "object",
+        "required": [
+          "google_place_id",
+          "source",
+          "details_available"
+        ],
+        "title": "PlaceDetails",
+        "description": "What a saved Plan or place shows for a place ID (#29). From Google when\n`source` is \"google\"; otherwise from our catalogue (\"catalogue\") or Demo\ndata (\"demo\"), with `details_available` false when Google wasn't asked."
       },
       "PlacePhoto": {
         "properties": {
