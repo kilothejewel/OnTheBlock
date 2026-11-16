@@ -73,25 +73,38 @@ def _is_pre_alembic(conn: Connection) -> bool:
         return False
     return any(inspector.has_table(table.name) for table in Base.metadata.sorted_tables)
 
+# The baseline migration's (0001) columns. A database built before Alembic is
+# brought up to exactly these before it's stamped at the baseline; anything a
+# later migration adds is left to that migration.
+BASELINE_COLUMNS = {
+    "users": {"id", "username", "email", "hashed_password", "is_active", "created_at", "supabase_uid"},
+    "hotspots": {"id", "google_place_id", "name", "rating", "user_rating_count", "address", "latitude",
+                 "longitude", "price_level", "types", "created_at"},
+    "itineraries": {"id", "user_id", "title", "destination", "budget", "duration_days", "city", "currency",
+                    "items", "created_at"},
+    "user_hotspots": {"user_id", "hotspot_id", "created_at"},
+}
+
+
 def _add_missing_columns(conn: Connection) -> None:
     """
-    Add the nullable columns the models have but the existing tables lack,
-    with their indexes.
+    Add the baseline's nullable columns that an existing table lacks, with
+    their indexes.
 
     create_all() never altered existing tables, so a database built with it
-    can be missing columns added to the models later. This brings it up to
-    the baseline before it's stamped there. It reads the current models, so
-    it must only run while they still match the baseline: adopt databases
-    before a later migration adds a column.
+    can be missing columns added to the models before migrations existed.
+    This brings it up to the baseline (BASELINE_COLUMNS) before it's stamped
+    there, and never adds a column a later migration owns.
     """
     inspector = inspect(conn)
     for table in Base.metadata.sorted_tables:
-        if not inspector.has_table(table.name):
+        baseline = BASELINE_COLUMNS.get(table.name)
+        if baseline is None or not inspector.has_table(table.name):
             continue
         existing = {column["name"] for column in inspector.get_columns(table.name)}
         added = set()
         for column in table.columns:
-            if column.name not in existing and column.nullable:
+            if column.name in baseline and column.name not in existing and column.nullable:
                 column_type = column.type.compile(dialect=conn.dialect)
                 conn.execute(text(f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {column_type}'))
                 added.add(column.name)

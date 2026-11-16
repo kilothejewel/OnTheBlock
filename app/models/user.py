@@ -19,3 +19,4 @@ class User(Base):
     # Relationships
     saved_hotspots = relationship("Hotspot", secondary="user_hotspots", back_populates="saved_by_users")
     itineraries = relationship("Itinerary", back_populates="user", cascade="all, delete-orphan")
+    chats = relationship("Chat", back_populates="user", cascade="all, delete-orphan")

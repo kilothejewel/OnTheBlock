@@ -106,14 +106,15 @@ APP_TABLES = ["users", "hotspots", "user_hotspots", "itineraries"]
 
 def pre_alembic_database(conn):
     """
-    Build the schema the pre-Alembic way (create_all) and add a row to every table.
+    Build the schema a database had before Alembic, and add a row to every table.
 
-    Only the baseline's tables: a database built before migrations has nothing
-    that later migrations add. users.supabase_uid, a nullable column with a
-    unique index, is left out, as on a database built before that column was
-    added to the model.
+    That's exactly the baseline (migration 0001) with no alembic_version: such a
+    database has nothing later migrations add, so it's built from 0001, not from
+    today's models. users.supabase_uid, a nullable column with a unique index,
+    is left out, as on a database built before that column was added.
     """
-    Base.metadata.create_all(conn, tables=[Base.metadata.tables[name] for name in APP_TABLES])
+    command.upgrade(alembic_config(conn), "0001")
+    conn.execute(text("DROP TABLE alembic_version"))
     conn.execute(text("DROP INDEX ix_users_supabase_uid"))
     conn.execute(text("ALTER TABLE users DROP COLUMN supabase_uid"))
     conn.execute(text(
