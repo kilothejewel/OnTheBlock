@@ -15,6 +15,9 @@ class Itinerary(Base):
     city = Column(String, nullable=True) # Supported city slug, e.g. "tokyo"
     currency = Column(String, nullable=True) # ISO 4217 code costs are estimated in
     items = Column(JSON, nullable=False) # JSON list containing details of each day's itinerary stops
+    # Saved from a chat's Plan (#101); null on Plans saved by the old form planner.
+    plan_version_id = Column(String(36), ForeignKey("plan_versions.id", ondelete="SET NULL", name="fk_itineraries_plan_version_id"), nullable=True)
+    mode = Column(String(10), nullable=True)  # day, night or full_day; null on older Plans
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
