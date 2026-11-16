@@ -477,19 +477,24 @@ a.sr-only:focus {
 .page-header { display: flex; flex-direction: column; gap: 8px; margin-bottom: 28px; }
 @media (min-width: 768px) { .page-header { margin-bottom: 40px; } }
 
+/* Shown at every width so the data credits are always there; on phones it
+   leaves room for the fixed bottom nav. */
 .footer {
-  display: none;
   border-top: 1px solid var(--border);
   background: var(--surface);
+  padding-bottom: calc(var(--bottomnav-h) + env(safe-area-inset-bottom));
 }
-@media (min-width: 900px) { .footer { display: block; } }
+@media (min-width: 900px) { .footer { padding-bottom: 0; } }
 .footer__inner {
   max-width: var(--container); margin: 0 auto; padding: 24px var(--gutter);
-  display: flex; justify-content: space-between; gap: 16px;
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px;
   align-items: center;
   font-size: 14px; color: var(--text-3);
 }
 .footer__logo { font-size: 16px; }
+.footer__credits { flex-basis: 100%; font-size: 13px; line-height: 20px; }
+.footer__credits a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.footer__credits a:hover { color: var(--text); }
 
 /* Toast */
 .toast {
