@@ -1,0 +1,28 @@
+# Cost data for cities without their own file yet. Every value is unknown on
+# purpose: the cost model (#96) then shows "price not confirmed" rather than a
+# made-up range. Johannesburg, Durban and Pretoria each get their own file
+# before they launch (separate issues), like cape-town.yaml.
+
+city: _default
+currency: null
+fees: []
+price_level_bands:
+  todo: "Unknown: no curated data for this city yet"
+  source_url: null
+  checked_on: null
+category_bands:
+  todo: "Unknown: no curated data for this city yet"
+  source_url: null
+  checked_on: null
+defaults:
+  todo: "Unknown: no curated data for this city yet"
+  source_url: null
+  checked_on: null
+e_hailing:
+  todo: "Unknown: no curated data for this city yet"
+  source_url: null
+  checked_on: null
+parking:
+  todo: "Unknown: no curated data for this city yet"
+  source_url: null
+  checked_on: null
