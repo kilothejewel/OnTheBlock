@@ -142,14 +142,34 @@ def test_parse_place_maps_the_new_api_shape():
     }
 
 
-def test_live_search_is_biased_to_the_city(live_google):
+def test_live_search_is_restricted_to_the_citys_bounds(live_google):
     places = asyncio.run(places_service.search_places("brunch", get_city("cape-town")))
     assert [p["name"] for p in places] == ["Test Bistro"]
 
     _, _, body = live_google[0]
     assert body["textQuery"] == "brunch in Cape Town"
     assert body["regionCode"] == "ZA"
-    assert body["locationBias"]["circle"]["center"]["latitude"] == pytest.approx(-33.9249)
+    assert body["locationRestriction"] == {
+        "rectangle": {
+            "low": {"latitude": -34.36, "longitude": 18.30},
+            "high": {"latitude": -33.47, "longitude": 19.00},
+        }
+    }
+    assert "locationBias" not in body
+
+
+def test_results_outside_the_city_are_dropped(live_google, monkeypatch):
+    elsewhere = {**GOOGLE_PLACE, "id": "ChIJjhb000000001", "displayName": {"text": "Joburg Grill"},
+                 "location": {"latitude": -26.10, "longitude": 28.05}}
+    no_location = {**GOOGLE_PLACE, "id": "ChIJnoloc0000001", "displayName": {"text": "Somewhere"}, "location": None}
+
+    async def fake_request(method, path, *, field_mask=None, json=None, params=None):
+        return {"places": [GOOGLE_PLACE, elsewhere, no_location]}
+
+    monkeypatch.setattr(places_service, "_request", fake_request)
+    places = asyncio.run(places_service.search_places("grill", get_city("cape-town")))
+
+    assert [p["name"] for p in places] == ["Test Bistro", "Somewhere"]
 
 
 def test_search_failure_returns_a_clear_502(client, auth_headers, monkeypatch):

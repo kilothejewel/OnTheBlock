@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Toast } from '../components/Feedback';
 import { apiFetch } from '../lib/api';
-import { rememberCity, storedCity } from '../lib/cities';
+import { cityBySlug, rememberCity, storedCity, useCities } from '../lib/cities';
 import { PERIODS } from '../lib/places';
 import { LibraryContext, PlanningContext, SessionContext, ToastContext, useLibrary, useSession, useToast } from './contexts';
 
@@ -152,8 +152,11 @@ function PlanningProvider({ children }) {
   const { addTrip } = useLibrary();
   const { notify, reportError } = useToast();
 
-  // One city for the whole app.
-  const [city, setCity] = useState(storedCity);
+  // One city for the whole app. A remembered city that's no longer listed
+  // (hidden, or removed) falls back to the first one, South Africa first.
+  const cities = useCities();
+  const [chosenCity, setCity] = useState(storedCity);
+  const city = cities.length > 0 && !cityBySlug(cities, chosenCity) ? cities[0].slug : chosenCity;
   // Discover
   const [searchQuery, setSearchQuery] = useState('trendy cafes');
   const [places, setPlaces] = useState([]);

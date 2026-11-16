@@ -3,7 +3,7 @@ from typing import Any, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.core.cities import CitySlug
+from app.core.cities import PlannableCity
 
 Budget = Literal["$", "$$", "$$$"]
 
@@ -89,7 +89,7 @@ class ItineraryResponse(ItineraryBase):
     }
 
 class ItineraryGenerate(BaseModel):
-    city: CitySlug = Field(..., description="Supported city slug (e.g. 'cape-town')")
+    city: PlannableCity = Field(..., description="A live or beta city's slug (e.g. 'cape-town'); see GET /cities")
     budget: Budget = Field(..., description="Budget level ($, $$, or $$$)")
     duration_days: int = Field(1, ge=1, le=7, description="Itinerary length in days (1-7)")
     preferences: Optional[str] = Field(None, max_length=200, description="Optional comma-separated vibes or preferences (e.g. 'art, vegan, nightlife')")

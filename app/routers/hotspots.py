@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy.orm import Session
 from typing import List
-from app.core.cities import CitySlug, get_city
+from app.core.cities import PlannableCity, get_city
 from app.core.database import get_db
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
@@ -18,7 +18,7 @@ async def recommend_hotspots(
     request: Request,
     response: Response,
     query: str = Query(..., min_length=1, max_length=120),
-    city: CitySlug = "miami",
+    city: PlannableCity = "cape-town",
     current_user: User = Depends(get_current_user)
 ):
     """

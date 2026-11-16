@@ -116,6 +116,32 @@
         ]
       }
     },
+    "/api/v1/cities": {
+      "get": {
+        "tags": [
+          "cities"
+        ],
+        "summary": "List Cities",
+        "description": "The cities that take new Plans, for the web and mobile pickers: South\nAfrican cities first (live, then beta), then international ones. Hidden\ncities are left out. Open to everyone.",
+        "operationId": "list_cities_api_v1_cities_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CityOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Cities Api V1 Cities Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/hotspots/recommend": {
       "get": {
         "tags": [
@@ -146,15 +172,18 @@
             "in": "query",
             "required": false,
             "schema": {
+              "type": "string",
               "enum": [
-                "miami",
-                "london",
                 "cape-town",
                 "johannesburg",
+                "durban",
+                "pretoria",
+                "stellenbosch",
+                "miami",
+                "london",
                 "tokyo"
               ],
-              "type": "string",
-              "default": "miami",
+              "default": "cape-town",
               "title": "City"
             }
           }
@@ -597,6 +626,44 @@
   },
   "components": {
     "schemas": {
+      "CityOut": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "province": {
+            "type": "string",
+            "title": "Province"
+          },
+          "country_code": {
+            "type": "string",
+            "title": "Country Code"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "province",
+          "country_code",
+          "currency",
+          "status"
+        ],
+        "title": "CityOut"
+      },
       "GeneratedItinerary": {
         "properties": {
           "title": {
@@ -957,14 +1024,17 @@
           "city": {
             "type": "string",
             "enum": [
-              "miami",
-              "london",
               "cape-town",
               "johannesburg",
+              "durban",
+              "pretoria",
+              "stellenbosch",
+              "miami",
+              "london",
               "tokyo"
             ],
             "title": "City",
-            "description": "Supported city slug (e.g. 'cape-town')"
+            "description": "A live or beta city's slug (e.g. 'cape-town'); see GET /cities"
           },
           "budget": {
             "type": "string",

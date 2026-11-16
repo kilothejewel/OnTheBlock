@@ -1,9 +1,11 @@
-import { CITIES } from '../lib/cities';
+import { useCities } from '../lib/cities';
 
+// The cities from GET /cities, South Africa first.
 export default function CityPicker({ value, onChange, labelledBy }) {
+  const cities = useCities();
   return (
     <div className="chip-row" role="radiogroup" aria-labelledby={labelledBy}>
-      {CITIES.map((c) => (
+      {cities.map((c) => (
         <button
           key={c.slug}
           type="button"

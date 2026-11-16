@@ -1,23 +1,59 @@
-// The cities the app supports. Slugs match the API's (app/core/cities.py).
-export const CITIES = [
-  { slug: 'miami', name: 'Miami', currency: 'USD' },
-  { slug: 'london', name: 'London', currency: 'GBP' },
-  { slug: 'cape-town', name: 'Cape Town', currency: 'ZAR' },
-  { slug: 'johannesburg', name: 'Johannesburg', currency: 'ZAR' },
-  { slug: 'tokyo', name: 'Tokyo', currency: 'JPY' },
-];
+// The cities the app plans in, from the API's registry (GET /cities, which
+// lists South African cities first). Fetched once per page load.
+import { useEffect, useState } from 'react';
+import { apiFetch } from './api';
 
-export const DEFAULT_CITY = 'miami';
+/** @typedef {{ slug: string, name: string, province: string, country_code: string, currency: string, status: string }} City */
 
-export function cityBySlug(slug) {
-  return CITIES.find((c) => c.slug === slug) || null;
+export const DEFAULT_CITY = 'cape-town';
+
+/** @type {Promise<City[]> | null} */
+let request = null;
+/** @type {City[] | null} */
+let loaded = null;
+
+// The visible cities. Resolves to [] if the API can't be reached; a later call tries again.
+export function loadCities() {
+  if (!request) {
+    request = apiFetch('/cities')
+      .then((cities) => {
+        loaded = cities;
+        return cities;
+      })
+      .catch(() => {
+        request = null;
+        return [];
+      });
+  }
+  return request;
+}
+
+// For tests: forget the fetched list.
+export function resetCities() {
+  request = null;
+  loaded = null;
+}
+
+// The cities, [] until they've loaded.
+export function useCities() {
+  const [cities, setCities] = useState(() => loaded || []);
+  useEffect(() => {
+    if (loaded) return undefined;
+    let cancelled = false;
+    loadCities().then((list) => { if (!cancelled) setCities(list); });
+    return () => { cancelled = true; };
+  }, []);
+  return cities;
+}
+
+export function cityBySlug(cities, slug) {
+  return cities.find((c) => c.slug === slug) || null;
 }
 
 // The last city the person picked, remembered on this device.
 export function storedCity() {
   try {
-    const slug = localStorage.getItem('otb_city');
-    return cityBySlug(slug) ? slug : DEFAULT_CITY;
+    return localStorage.getItem('otb_city') || DEFAULT_CITY;
   } catch {
     return DEFAULT_CITY;
   }

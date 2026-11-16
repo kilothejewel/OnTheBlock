@@ -2,7 +2,7 @@ import { Search, LoaderCircle, Compass, Info } from 'lucide-react';
 import PlaceCard from './PlaceCard';
 import CityPicker from './CityPicker';
 import { EmptyState } from './Feedback';
-import { cityBySlug } from '../lib/cities';
+import { cityBySlug, useCities } from '../lib/cities';
 import { isDemoPlaceId } from '../lib/places';
 
 function SkeletonCard() {
@@ -21,7 +21,7 @@ function SkeletonCard() {
 
 export default function DiscoverView({ city, onCityChange, searchQuery, setSearchQuery, onSearch, searchLoading, places, savedHotspots, onToggleSave }) {
   const savedIds = new Set(savedHotspots.map((h) => h.google_place_id));
-  const cityName = cityBySlug(city)?.name;
+  const cityName = cityBySlug(useCities(), city)?.name;
   const isDemo = places.length > 0 && places.every((p) => isDemoPlaceId(p.google_place_id));
 
   return (

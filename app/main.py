@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.core.http_client import close_http_client, open_http_client
 from app.core.rate_limit import limiter, rate_limit_exceeded_handler
 from app.routers.auth import router as auth_router
+from app.routers.cities import router as cities_router
 from app.routers.hotspots import router as hotspots_router
 from app.routers.itineraries import router as itineraries_router
 from app.routers.places import router as places_router
@@ -49,6 +50,7 @@ app.add_middleware(
 
 # Include API Routers
 app.include_router(auth_router, prefix=settings.API_V1_STR)
+app.include_router(cities_router, prefix=settings.API_V1_STR)
 app.include_router(hotspots_router, prefix=settings.API_V1_STR)
 app.include_router(itineraries_router, prefix=settings.API_V1_STR)
 app.include_router(places_router, prefix=settings.API_V1_STR)

@@ -6,7 +6,7 @@ import { EmptyState } from '../components/Feedback';
 import { GeneratingState, PlannerForm } from '../components/PlannerView';
 import TripView from '../components/TripView';
 import { SavedView, TripsView } from '../components/CollectionViews';
-import { cityBySlug } from '../lib/cities';
+import { cityBySlug, useCities } from '../lib/cities';
 import { useLibrary, usePlanning, useSession } from '../state/contexts';
 import { useRequireSignIn } from '../state/useRequireSignIn';
 
@@ -31,12 +31,13 @@ export function DiscoverPage() {
 
 export function PlanPage() {
   const planning = usePlanning();
+  const cities = useCities();
   const { savedHotspots } = useLibrary();
   const requireSignIn = useRequireSignIn();
   const navigate = useNavigate();
 
   if (planning.generating) {
-    return <GeneratingState destination={cityBySlug(planning.city)?.name} duration={planning.duration} />;
+    return <GeneratingState destination={cityBySlug(cities, planning.city)?.name} duration={planning.duration} />;
   }
   if (planning.previewItinerary) {
     return (
