@@ -31,6 +31,10 @@ Some code names still predate the [glossary](../GLOSSARY.md): `Itinerary` is a P
 
 `app/data/cities.yaml` is the city registry: name, province, currency, time zone, centre, metro `bounds` and `launch_status` (`live`, `beta` or `hidden`) per city. It's validated when the API starts; a broken file stops startup with the reason. Only `live` and `beta` cities take new Plans and searches; a `hidden` city's saved Plans still open. Google Text Search is restricted to a city's `bounds`, and results outside them are dropped. `GET /api/v1/cities` lists the visible cities, South Africa first, for the web and mobile pickers.
 
+### Places catalogue
+
+Candidates for a Plan come from each city's own catalogue, the `places` table, built offline from open data by `scripts/catalogue/ingest.py` (#119, [ADR 0007](adr/0007-data-sources-and-licences.md)). The **Places catalogue** GitHub Action (`.github/workflows/catalogue.yml`, run by hand for now) reads Overture Maps places, and Foursquare OS Places when given, for the city's bounds with DuckDB. It keeps places that map to an Interest, merges duplicates, assigns Areas and upserts by source id. The API never imports DuckDB. Google is only used to match a place ID (#120) and to check the final Stops live (#93).
+
 ### How a Plan is generated
 
 The chat planner is a fixed pipeline ([ADR 0006](adr/0006-planner-pipeline.md)), being built in SA2 (#78):
