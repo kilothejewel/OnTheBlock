@@ -65,6 +65,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/briefs/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check Brief
+         * @description Validate a Brief and return it with its defaults filled in. 422 lists what's
+         *     wrong in plain words. No Google or LLM calls; open to everyone.
+         */
+        post: operations["check_brief_api_v1_briefs_check_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/briefs/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply Brief Patch
+         * @description Apply a BriefPatch to a Brief: only the patch's fields change.
+         */
+        post: operations["apply_brief_patch_api_v1_briefs_apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/cities": {
         parameters: {
             query?: never;
@@ -329,6 +370,137 @@ export interface components {
             /** Reviewed */
             reviewed: boolean;
         };
+        /**
+         * Brief
+         * @description Everything the planner needs to know about the Plan someone wants.
+         */
+        Brief: {
+            /**
+             * City
+             * @enum {string}
+             */
+            city: "cape-town" | "johannesburg" | "durban" | "pretoria" | "stellenbosch" | "miami" | "london" | "tokyo";
+            /**
+             * Area
+             * @description An Area slug of the city; null lets the planner choose
+             */
+            area?: string | null;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /**
+             * Start Time
+             * @description Defaults from mode
+             */
+            start_time?: string | null;
+            /**
+             * End Time
+             * @description Defaults from mode; before start_time means after midnight
+             */
+            end_time?: string | null;
+            /**
+             * Mode
+             * @default day
+             * @enum {string}
+             */
+            mode?: "day" | "night" | "full_day";
+            /**
+             * Party Size
+             * @default 1
+             */
+            party_size?: number;
+            /**
+             * Budget Amount
+             * @description In the city's currency (ZAR in South Africa)
+             */
+            budget_amount?: number | null;
+            /**
+             * Budget Basis
+             * @default per_person
+             * @enum {string}
+             */
+            budget_basis?: "per_person" | "total";
+            /** Interests */
+            interests?: components["schemas"]["InterestWeight"][];
+            /**
+             * Must Include
+             * @description Free text, e.g. Lion's Head
+             */
+            must_include?: string[];
+            /**
+             * Avoid
+             * @description Free text, e.g. no alcohol
+             */
+            avoid?: string[];
+            /**
+             * Transport
+             * @default e_hailing
+             * @enum {string}
+             */
+            transport?: "e_hailing" | "own_car" | "walk_short";
+            /** Dietary */
+            dietary?: ("vegan" | "halaal" | "kosher" | "vegetarian" | "gluten_free")[];
+            /**
+             * Accessibility
+             * @default none
+             * @enum {string}
+             */
+            accessibility?: "none" | "step_free";
+            /**
+             * Pace
+             * @default relaxed
+             * @enum {string}
+             */
+            pace?: "relaxed" | "packed";
+        };
+        /**
+         * BriefPatch
+         * @description A change to a Brief: only the fields it sets change. null clears a field that can be empty.
+         */
+        BriefPatch: {
+            /** City */
+            city?: ("cape-town" | "johannesburg" | "durban" | "pretoria" | "stellenbosch" | "miami" | "london" | "tokyo") | null;
+            /** Area */
+            area?: string | null;
+            /** Date */
+            date?: null;
+            /** Start Time */
+            start_time?: string | null;
+            /** End Time */
+            end_time?: string | null;
+            /** Mode */
+            mode?: ("day" | "night" | "full_day") | null;
+            /** Party Size */
+            party_size?: number | null;
+            /** Budget Amount */
+            budget_amount?: number | null;
+            /** Budget Basis */
+            budget_basis?: ("per_person" | "total") | null;
+            /** Interests */
+            interests?: components["schemas"]["InterestWeight"][] | null;
+            /** Must Include */
+            must_include?: string[] | null;
+            /** Avoid */
+            avoid?: string[] | null;
+            /** Transport */
+            transport?: ("e_hailing" | "own_car" | "walk_short") | null;
+            /** Dietary */
+            dietary?: ("vegan" | "halaal" | "kosher" | "vegetarian" | "gluten_free")[] | null;
+            /** Accessibility */
+            accessibility?: ("none" | "step_free") | null;
+            /** Pace */
+            pace?: ("relaxed" | "packed") | null;
+        };
+        /** BriefUpdate */
+        BriefUpdate: {
+            /** Brief */
+            brief: {
+                [key: string]: unknown;
+            };
+            patch: components["schemas"]["BriefPatch"];
+        };
         /** CityOut */
         CityOut: {
             /** Slug */
@@ -429,6 +601,16 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** InterestWeight */
+        InterestWeight: {
+            /** Interest */
+            interest: string;
+            /**
+             * Weight
+             * @default 1
+             */
+            weight?: number;
         };
         /** ItineraryCreate */
         ItineraryCreate: {
@@ -769,6 +951,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+        };
+    };
+    check_brief_api_v1_briefs_check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Brief"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_brief_patch_api_v1_briefs_apply_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BriefUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Brief"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

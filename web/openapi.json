@@ -116,6 +116,92 @@
         ]
       }
     },
+    "/api/v1/briefs/check": {
+      "post": {
+        "tags": [
+          "briefs"
+        ],
+        "summary": "Check Brief",
+        "description": "Validate a Brief and return it with its defaults filled in. 422 lists what's\nwrong in plain words. No Google or LLM calls; open to everyone.",
+        "operationId": "check_brief_api_v1_briefs_check_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Brief"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Brief"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/briefs/apply": {
+      "post": {
+        "tags": [
+          "briefs"
+        ],
+        "summary": "Apply Brief Patch",
+        "description": "Apply a BriefPatch to a Brief: only the patch's fields change.",
+        "operationId": "apply_brief_patch_api_v1_briefs_apply_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BriefUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Brief"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/cities": {
       "get": {
         "tags": [
@@ -729,6 +815,430 @@
         ],
         "title": "AreaOut"
       },
+      "Brief": {
+        "properties": {
+          "city": {
+            "type": "string",
+            "enum": [
+              "cape-town",
+              "johannesburg",
+              "durban",
+              "pretoria",
+              "stellenbosch",
+              "miami",
+              "london",
+              "tokyo"
+            ],
+            "title": "City"
+          },
+          "area": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Area",
+            "description": "An Area slug of the city; null lets the planner choose"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "start_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Time",
+            "description": "Defaults from mode"
+          },
+          "end_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time",
+            "description": "Defaults from mode; before start_time means after midnight"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "day",
+              "night",
+              "full_day"
+            ],
+            "title": "Mode",
+            "default": "day"
+          },
+          "party_size": {
+            "type": "integer",
+            "maximum": 12.0,
+            "minimum": 1.0,
+            "title": "Party Size",
+            "default": 1
+          },
+          "budget_amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Amount",
+            "description": "In the city's currency (ZAR in South Africa)"
+          },
+          "budget_basis": {
+            "type": "string",
+            "enum": [
+              "per_person",
+              "total"
+            ],
+            "title": "Budget Basis",
+            "default": "per_person"
+          },
+          "interests": {
+            "items": {
+              "$ref": "#/components/schemas/InterestWeight"
+            },
+            "type": "array",
+            "title": "Interests"
+          },
+          "must_include": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Must Include",
+            "description": "Free text, e.g. Lion's Head"
+          },
+          "avoid": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Avoid",
+            "description": "Free text, e.g. no alcohol"
+          },
+          "transport": {
+            "type": "string",
+            "enum": [
+              "e_hailing",
+              "own_car",
+              "walk_short"
+            ],
+            "title": "Transport",
+            "default": "e_hailing"
+          },
+          "dietary": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "vegan",
+                "halaal",
+                "kosher",
+                "vegetarian",
+                "gluten_free"
+              ]
+            },
+            "type": "array",
+            "title": "Dietary"
+          },
+          "accessibility": {
+            "type": "string",
+            "enum": [
+              "none",
+              "step_free"
+            ],
+            "title": "Accessibility",
+            "default": "none"
+          },
+          "pace": {
+            "type": "string",
+            "enum": [
+              "relaxed",
+              "packed"
+            ],
+            "title": "Pace",
+            "default": "relaxed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "city",
+          "date"
+        ],
+        "title": "Brief",
+        "description": "Everything the planner needs to know about the Plan someone wants."
+      },
+      "BriefPatch": {
+        "properties": {
+          "city": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "cape-town",
+                  "johannesburg",
+                  "durban",
+                  "pretoria",
+                  "stellenbosch",
+                  "miami",
+                  "london",
+                  "tokyo"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "area": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Area"
+          },
+          "date": {
+            "type": "null",
+            "title": "Date"
+          },
+          "start_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Time"
+          },
+          "end_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time"
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "day",
+                  "night",
+                  "full_day"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mode"
+          },
+          "party_size": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 12.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Party Size"
+          },
+          "budget_amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Amount"
+          },
+          "budget_basis": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "per_person",
+                  "total"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Basis"
+          },
+          "interests": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/InterestWeight"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interests"
+          },
+          "must_include": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Must Include"
+          },
+          "avoid": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avoid"
+          },
+          "transport": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "e_hailing",
+                  "own_car",
+                  "walk_short"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transport"
+          },
+          "dietary": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "vegan",
+                    "halaal",
+                    "kosher",
+                    "vegetarian",
+                    "gluten_free"
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dietary"
+          },
+          "accessibility": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "step_free"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accessibility"
+          },
+          "pace": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "relaxed",
+                  "packed"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pace"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "BriefPatch",
+        "description": "A change to a Brief: only the fields it sets change. null clears a field that can be empty."
+      },
+      "BriefUpdate": {
+        "properties": {
+          "brief": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Brief"
+          },
+          "patch": {
+            "$ref": "#/components/schemas/BriefPatch"
+          }
+        },
+        "type": "object",
+        "required": [
+          "brief",
+          "patch"
+        ],
+        "title": "BriefUpdate"
+      },
       "CityOut": {
         "properties": {
           "slug": {
@@ -1054,6 +1564,27 @@
           "created_at"
         ],
         "title": "HotspotResponse"
+      },
+      "InterestWeight": {
+        "properties": {
+          "interest": {
+            "type": "string",
+            "title": "Interest"
+          },
+          "weight": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Weight",
+            "default": 1.0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "interest"
+        ],
+        "title": "InterestWeight"
       },
       "ItineraryCreate": {
         "properties": {
