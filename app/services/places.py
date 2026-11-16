@@ -7,6 +7,7 @@ import httpx
 from app.core.cities import City
 from app.core.config import settings
 from app.core.http_client import get_http_client
+from app.core.observability import count_call
 from app.services.demo_places import demo_search, demo_slot
 
 PLACES_API = "https://places.googleapis.com/v1"
@@ -91,6 +92,7 @@ class GooglePlacesService:
         headers = {"X-Goog-Api-Key": self.api_key}
         if field_mask:
             headers["X-Goog-FieldMask"] = field_mask
+        count_call("google")
         try:
             response = await get_http_client().request(
                 method, f"{PLACES_API}/{path}", headers=headers, json=json, params=params

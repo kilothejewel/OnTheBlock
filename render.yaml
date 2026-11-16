@@ -29,3 +29,7 @@ services:
         sync: false
       - key: OTB_GOOGLE_PLACES_API_KEY # optional: leave empty for demo places
         sync: false
+      - key: OTB_LOG_FORMAT # one JSON object per log line
+        value: json
+      - key: OTB_SENTRY_DSN # optional: Sentry project DSN; error tracking is off while empty
+        sync: false

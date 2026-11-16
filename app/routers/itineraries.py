@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 from typing import List
@@ -8,6 +10,9 @@ from app.models.user import User
 from app.models.itinerary import Itinerary
 from app.schemas.itinerary import GeneratedItinerary, ItineraryCreate, ItineraryResponse, ItineraryGenerate
 from app.services.itinerary import itinerary_service
+from app.core.observability import call_summary
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/itineraries", tags=["itineraries"])
 
@@ -28,9 +33,10 @@ async def generate_itinerary(
     """
     try:
         itinerary = await itinerary_service.generate_itinerary(params)
+        log.info("plan generated", extra={"city": params.city, "demo": bool(itinerary.get("demo")), **call_summary()})
         return itinerary
     except Exception as e:
-        print(f"Itinerary generation failed: {e}")
+        log.warning("plan generation failed", extra={"city": params.city, "error": str(e), **call_summary()})
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Couldn't plan that day. Please try again."

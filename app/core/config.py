@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Literal, Optional
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -67,6 +67,12 @@ class Settings(BaseSettings):
         "eval": {"google.details_enterprise": 200, "google.details_pro": 200},  # #108
         "guests": {"google.details_enterprise": 150, "google.details_pro": 300, "google.photos": 150},  # #125
     }
+
+    #Logging and error tracking (app/core/observability.py)
+    LOG_FORMAT: Literal["text", "json"] = "text"  # json on Render: one JSON object per line
+    LOG_LEVEL: str = "INFO"
+    SENTRY_DSN: Optional[str] = None  # error tracking is off while unset
+    SENTRY_ENVIRONMENT: str = "production"
 
     #Auth / JWT Settings
     SECRET_KEY: str
