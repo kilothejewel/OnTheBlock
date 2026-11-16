@@ -50,12 +50,14 @@ The site runs on http://localhost:5273.
 
 ### Using real data (optional)
 
-Only needed if you're working on the live Google Places or OpenAI paths. Use **your own** keys; the project never shares its keys.
+Only needed if you're working on the live Google Places or LLM paths. Use **your own** keys; the project never shares its keys.
 
 - `OTB_GOOGLE_PLACES_API_KEY`: a Google Maps Platform key with **Places API (New)** enabled.
-- `OTB_OPENAI_API_KEY`: an OpenAI API key.
+- `OTB_GEMINI_API_KEY`: a Gemini API key from Google AI Studio, on a project **without billing**, so it stays on the free tier.
+- `OTB_GROQ_API_KEY`: a Groq key on the free plan.
+- `OTB_OPENAI_API_KEY`: only for the v1 form planner, until #118 removes it.
 
-Both cost money per call. Before adding them, set a daily quota on the Places API and a budget alert in Google Cloud, and a monthly spending limit on your OpenAI account.
+Without the Gemini and Groq keys the chat planner uses its rules client, which needs no model (`app/services/llm.py`). Free-tier providers may read prompts, so never put real personal details in test chats. Before adding a Google key, set a daily quota on the Places API and a budget alert in Google Cloud.
 
 ## Tests and checks
 

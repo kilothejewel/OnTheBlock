@@ -44,6 +44,22 @@ class Settings(BaseSettings):
     #Google Places Settings (optional: without a key, places use demo data)
     GOOGLE_PLACES_API_KEY: Optional[str] = None
 
+    #LLM providers (app/services/llm.py, ADR 0006): free tiers only.
+    # Tried in order; "rules" needs no model and never fails, so it's always last.
+    LLM_CHAIN: str = "gemini,groq,rules"
+    LLM_TIMEOUT_SECONDS: float = 20
+    GEMINI_API_KEY: Optional[str] = None  # AI Studio key on a project without billing (#44)
+    GEMINI_API_REVISION: str = "2026-05-20"  # Interactions API revision
+    GEMINI_INTAKE_MODEL: str = "gemini-3.5-flash-lite"
+    GEMINI_COMPOSE_MODEL: str = "gemini-3.6-flash"
+    # The unpaid Gemini API may not serve users in the EEA, the UK or Switzerland.
+    GEMINI_BLOCKED_COUNTRIES: str = (
+        "AT,BE,BG,HR,CY,CZ,DK,EE,FI,FR,DE,GR,HU,IE,IT,LV,LT,LU,MT,NL,PL,PT,RO,SK,SI,ES,SE,IS,LI,NO,GB,CH"
+    )
+    GROQ_API_KEY: Optional[str] = None  # Groq free plan (#44)
+    GROQ_INTAKE_MODEL: str = "openai/gpt-oss-20b"  # supports strict JSON schema output
+    GROQ_COMPOSE_MODEL: str = "openai/gpt-oss-120b"
+
     #Free-quota guard (app/services/quota.py)
     # Per resource: "day" is a limit for all pools together, "month" for all
     # pools together split between them (see QUOTA_POOL_CAPS). A missing limit
