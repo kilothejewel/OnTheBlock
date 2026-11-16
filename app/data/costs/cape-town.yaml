@@ -1,0 +1,142 @@
+# Curated costs for Cape Town, in rands per person, for the cost model (#96)
+# and transport legs (#97). DRAFT: being filled in and checked by Cameron (#95).
+#
+# Rules for every row:
+# - A number is only written once it has `source_url` and `checked_on`
+#   (YYYY-MM-DD, within the last 3 months). Never a guess.
+# - A row still to check has `value: null` (or a null band) and a `todo:`
+#   saying what to look up; the cost model treats it as unknown.
+# tests/test_costs_data.py checks both rules.
+
+city: cape-town
+currency: ZAR
+
+# Adult entry fees for places the planner is likely to pick.
+fees:
+  - key: table-mountain-cableway
+    name: Table Mountain Aerial Cableway, adult return
+    value: 475
+    notes: "Online price. Ticket office: R530. One way: R300 online, R330 at the office. Rates 1 Jul 2026 to 30 Jun 2027; weather permitting."
+    source_url: https://www.tablemountain.net/plan-your-visit/ticket-prices/
+    checked_on: 2026-11-16
+  - key: kirstenbosch
+    name: Kirstenbosch National Botanical Garden, adult (international and SA resident rates differ)
+    value: null
+    todo: "TODO(cameron): adult and SA-resident entry; SANBI's site lists no current tariff, check at the gate or the Kirstenbosch app"
+    source_url: https://www.sanbi.org/gardens/kirstenbosch/
+    checked_on: null
+  - key: cape-point
+    name: Table Mountain National Park, Cape of Good Hope (Cape Point) conservation fee, adult
+    value: null
+    todo: "TODO(cameron): SA resident and international adult fee from SANParks' Table Mountain tariffs (the old tariffs URL is a 404)"
+    source_url: https://www.sanparks.org/parks/table-mountain
+    checked_on: null
+  - key: boulders-beach
+    name: Boulders Beach penguins (Table Mountain National Park), adult
+    value: null
+    todo: "TODO(cameron): SANParks conservation fee for Boulders"
+    source_url: https://www.sanparks.org/parks/table-mountain
+    checked_on: null
+  - key: two-oceans-aquarium
+    name: Two Oceans Aquarium, adult
+    value: null
+    todo: "TODO(cameron): adult price from the official ticket shop (prices only show inside the booking flow)"
+    source_url: https://shop.aquarium.co.za/
+    checked_on: null
+  - key: zeitz-mocaa
+    name: Zeitz MOCAA, adult (note any free or SA-resident days)
+    value: null
+    todo: "TODO(cameron): adult entry and any free day for SA residents"
+    source_url: https://zeitzmocaa.museum/
+    checked_on: null
+  - key: robben-island
+    name: Robben Island Museum tour, adult
+    value: null
+    todo: "TODO(cameron): adult tour price (ferry included)"
+    source_url: https://www.robben-island.org.za/
+    checked_on: null
+  - key: iziko-museums
+    name: Iziko museums (South African Museum, Slave Lodge, Castle of Good Hope), adult
+    value: null
+    todo: "TODO(cameron): adult entry per museum, and Iziko's free days"
+    source_url: https://www.iziko.org.za/
+    checked_on: null
+  - key: wine-tasting-constantia
+    name: Wine tasting at a Constantia farm (e.g. Groot Constantia), standard tasting
+    value: null
+    todo: "TODO(cameron): standard tasting at two or three common Constantia farms"
+    source_url: https://www.grootconstantia.co.za/
+    checked_on: null
+  - key: wine-tasting-stellenbosch
+    name: Wine tasting at a common Stellenbosch farm, standard tasting
+    value: null
+    todo: "TODO(cameron): standard tasting at two or three common farms (Spier, Delaire Graff, Lanzerac)"
+    source_url: https://www.spier.co.za/
+    checked_on: null
+  - key: lions-head-hike
+    name: Lion's Head and Table Mountain trails
+    value: null
+    todo: "TODO(cameron): confirm the Lion's Head and Platteklip trails are still free (then set value: 0)"
+    source_url: https://www.sanparks.org/parks/table-mountain
+    checked_on: null
+
+# Rand per person for a Stop with a Google price level (0-4), per Slot kind:
+# [min, max], or null while still to fill in.
+price_level_bands:
+  todo: "TODO(cameron): fill from menus you trust; note the source of each row"
+  source_url: null
+  checked_on: null
+  breakfast: {0: null, 1: null, 2: null, 3: null, 4: null}
+  coffee: {0: null, 1: null, 2: null, 3: null, 4: null}
+  lunch: {0: null, 1: null, 2: null, 3: null, 4: null}
+  dinner: {0: null, 1: null, 2: null, 3: null, 4: null}
+  drinks: {0: null, 1: null, 2: null, 3: null, 4: null}
+  nightlife: {0: null, 1: null, 2: null, 3: null, 4: null}
+
+# Rand per person by catalogue category, for Stops the live check couldn't confirm.
+category_bands:
+  todo: "TODO(cameron): [min, max] per category"
+  source_url: null
+  checked_on: null
+  park: null
+  museum: null
+  art_gallery: null
+  night_club: null
+  bar: null
+  winery: null
+  restaurant: null
+  cafe: null
+  beach: null
+  market: null
+
+# When Google has nothing at all for a kind of Stop.
+defaults:
+  todo: "TODO(cameron): typical amounts"
+  source_url: null
+  checked_on: null
+  club_cover_plus_two_drinks: null
+  bar_two_drinks: null
+  trail: null
+  beach: null
+
+# E-hailing (Uber, Bolt) for legs between Stops (#97): sample real trips and note the date.
+e_hailing:
+  todo: "TODO(cameron): from a few real trips, e.g. City Bowl to Camps Bay, Waterfront to Woodstock, by day and after 22:00"
+  source_url: null
+  checked_on: null
+  base_fare: null
+  per_km: null
+  per_minute: null
+  minimum_fare: null
+  late_night_factor: null
+
+# Parking for own-car Plans, per Area (slugs from app/data/areas/cape-town.yaml).
+parking:
+  todo: "TODO(cameron): typical cost for a few hours, per Area"
+  source_url: null
+  checked_on: null
+  city-bowl: null
+  va-waterfront: null
+  camps-bay: null
+  kirstenbosch: null
+  constantia: null
