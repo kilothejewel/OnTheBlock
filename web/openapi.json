@@ -142,6 +142,53 @@
         }
       }
     },
+    "/api/v1/cities/{slug}/areas": {
+      "get": {
+        "tags": [
+          "cities"
+        ],
+        "summary": "List Areas",
+        "description": "A city's Areas, for picking where a Plan stays (GLOSSARY: Area). 404 for a\ncity that isn't in the registry or isn't open for planning. Open to everyone.",
+        "operationId": "list_areas_api_v1_cities__slug__areas_get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AreaOut"
+                  },
+                  "title": "Response List Areas Api V1 Cities  Slug  Areas Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/hotspots/recommend": {
       "get": {
         "tags": [
@@ -626,6 +673,62 @@
   },
   "components": {
     "schemas": {
+      "AreaOut": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "lat": {
+            "type": "number",
+            "title": "Lat"
+          },
+          "lng": {
+            "type": "number",
+            "title": "Lng"
+          },
+          "radius_m": {
+            "type": "integer",
+            "title": "Radius M"
+          },
+          "walk_friendly": {
+            "type": "boolean",
+            "title": "Walk Friendly"
+          },
+          "night_safe": {
+            "type": "boolean",
+            "title": "Night Safe"
+          },
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Aliases"
+          },
+          "reviewed": {
+            "type": "boolean",
+            "title": "Reviewed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "lat",
+          "lng",
+          "radius_m",
+          "walk_friendly",
+          "night_safe",
+          "aliases",
+          "reviewed"
+        ],
+        "title": "AreaOut"
+      },
       "CityOut": {
         "properties": {
           "slug": {

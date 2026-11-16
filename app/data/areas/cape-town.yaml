@@ -1,0 +1,140 @@
+# Areas in Cape Town: neighbourhoods a Plan can stay inside (GLOSSARY: Area).
+# Loaded by app/services/areas.py; served at GET /api/v1/cities/cape-town/areas.
+#
+# centre        from OpenStreetMap (Nominatim), 16 Nov 2026
+# radius_m      roughly how far the Area reaches from its centre
+# walk_friendly fine to walk between nearby Stops by day; feeds transport legs (#97)
+# night_safe    fine to walk between Stops after dark; feeds the validator (#99).
+#               false whenever we're not sure: a night leg is e-hailing then.
+# reviewed      true once a local (Cameron, for Cape Town) has checked the Area
+# aliases       other names people use for it in chat
+#
+# DRAFT: written from public knowledge, not yet checked by a local.
+
+areas:
+  - slug: city-bowl
+    name: "City Bowl"
+    centre: {lat: -33.9237, lng: 18.421}
+    radius_m: 1500
+    walk_friendly: true
+    night_safe: false
+    aliases: ["CBD", "town", "Gardens", "Bree Street", "Long Street"]
+    notes: "Bree and Long Street restaurants and bars; walkable by day. At night, e-hail between venues."
+    reviewed: false
+  - slug: bo-kaap
+    name: "Bo-Kaap"
+    centre: {lat: -33.9206, lng: 18.4129}
+    radius_m: 600
+    walk_friendly: true
+    night_safe: false
+    aliases: ["Bokaap", "Malay Quarter"]
+    notes: "Colourful houses and Cape Malay food; best in daylight."
+    reviewed: false
+  - slug: va-waterfront
+    name: "V&A Waterfront"
+    centre: {lat: -33.906, lng: 18.4195}
+    radius_m: 900
+    walk_friendly: true
+    night_safe: true
+    aliases: ["Waterfront", "V and A", "the V&A"]
+    notes: "Busy, well-patrolled harbour precinct with restaurants, the aquarium and Zeitz MOCAA."
+    reviewed: false
+  - slug: green-point
+    name: "Green Point"
+    centre: {lat: -33.9043, lng: 18.406}
+    radius_m: 900
+    walk_friendly: true
+    night_safe: false
+    aliases: ["Greenpoint", "Green Point Park", "DHL Stadium"]
+    notes: "Green Point Park and the stadium; next to the Waterfront."
+    reviewed: false
+  - slug: sea-point
+    name: "Sea Point"
+    centre: {lat: -33.9172, lng: 18.3922}
+    radius_m: 1200
+    walk_friendly: true
+    night_safe: false
+    aliases: ["Seapoint", "the promenade", "Mouille Point"]
+    notes: "The promenade is a classic walk or run; Main Road for food."
+    reviewed: false
+  - slug: camps-bay
+    name: "Camps Bay"
+    centre: {lat: -33.9548, lng: 18.3819}
+    radius_m: 1000
+    walk_friendly: true
+    night_safe: false
+    aliases: ["Campsbay", "Clifton"]
+    notes: "Beach and sunset strip; busy in summer, parking is tight."
+    reviewed: false
+  - slug: woodstock
+    name: "Woodstock"
+    centre: {lat: -33.9306, lng: 18.4472}
+    radius_m: 1000
+    walk_friendly: false
+    night_safe: false
+    aliases: ["Old Biscuit Mill", "Albert Road"]
+    notes: "Street art, design shops and the Saturday Neighbourgoods market; go by car or e-hailing."
+    reviewed: false
+  - slug: observatory
+    name: "Observatory"
+    centre: {lat: -33.9369, lng: 18.4683}
+    radius_m: 900
+    walk_friendly: true
+    night_safe: false
+    aliases: ["Obs"]
+    notes: "Bohemian student strip on Lower Main Road; live music and cheap eats."
+    reviewed: false
+  - slug: newlands
+    name: "Newlands"
+    centre: {lat: -33.9743, lng: 18.4573}
+    radius_m: 1200
+    walk_friendly: false
+    night_safe: false
+    aliases: ["Newlands Forest", "Newlands Stadium"]
+    notes: "Rugby and cricket grounds, the forest and Kirstenbosch nearby."
+    reviewed: false
+  - slug: constantia
+    name: "Constantia"
+    centre: {lat: -34.0283, lng: 18.4156}
+    radius_m: 2500
+    walk_friendly: false
+    night_safe: false
+    aliases: ["Constantia Valley", "Groot Constantia"]
+    notes: "Wine farms close to town; you need a car or e-hailing."
+    reviewed: false
+  - slug: muizenberg
+    name: "Muizenberg"
+    centre: {lat: -34.0978, lng: 18.4846}
+    radius_m: 1200
+    walk_friendly: true
+    night_safe: false
+    aliases: ["Muizies", "Surfer's Corner"]
+    notes: "Surfer's Corner, beginner surf and the beach huts."
+    reviewed: false
+  - slug: kalk-bay
+    name: "Kalk Bay"
+    centre: {lat: -34.1272, lng: 18.4468}
+    radius_m: 700
+    walk_friendly: true
+    night_safe: false
+    aliases: ["Kalkbay", "Kalk Bay harbour"]
+    notes: "Fishing harbour, antique shops and seafood; very walkable."
+    reviewed: false
+  - slug: hout-bay
+    name: "Hout Bay"
+    centre: {lat: -34.0301, lng: 18.3503}
+    radius_m: 2000
+    walk_friendly: false
+    night_safe: false
+    aliases: ["Houtbay", "Bay Harbour Market"]
+    notes: "Harbour, market and the start of Chapman's Peak Drive."
+    reviewed: false
+  - slug: kirstenbosch
+    name: "Kirstenbosch and Table Mountain"
+    centre: {lat: -33.9856, lng: 18.4301}
+    radius_m: 2500
+    walk_friendly: false
+    night_safe: false
+    aliases: ["Kirstenbosch", "Table Mountain", "Lion's Head", "Signal Hill", "the mountain"]
+    notes: "Gardens and the mountain trails; outdoor only, start early and finish before dark."
+    reviewed: false

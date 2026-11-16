@@ -1,0 +1,50 @@
+# Areas in Tokyo: neighbourhoods a Plan can stay inside (GLOSSARY: Area).
+# Loaded by app/services/areas.py; served at GET /api/v1/cities/tokyo/areas.
+#
+# centre        from OpenStreetMap (Nominatim), 16 Nov 2026
+# radius_m      roughly how far the Area reaches from its centre
+# walk_friendly fine to walk between nearby Stops by day; feeds transport legs (#97)
+# night_safe    fine to walk between Stops after dark; feeds the validator (#99).
+#               false whenever we're not sure: a night leg is e-hailing then.
+# reviewed      true once a local (Cameron, for Cape Town) has checked the Area
+# aliases       other names people use for it in chat
+#
+# DRAFT: written from public knowledge, not yet checked by a local.
+
+areas:
+  - slug: shibuya
+    name: "Shibuya"
+    centre: {lat: 35.6637, lng: 139.6977}
+    radius_m: 1200
+    walk_friendly: true
+    night_safe: true
+    aliases: ["Shibuya Crossing", "Harajuku"]
+    notes: "The crossing, shopping and nightlife."
+    reviewed: false
+  - slug: shinjuku
+    name: "Shinjuku"
+    centre: {lat: 35.6938, lng: 139.7036}
+    radius_m: 1200
+    walk_friendly: true
+    night_safe: true
+    aliases: ["Golden Gai", "Kabukicho"]
+    notes: "Golden Gai's tiny bars and the gardens."
+    reviewed: false
+  - slug: asakusa
+    name: "Asakusa"
+    centre: {lat: 35.7176, lng: 139.7976}
+    radius_m: 900
+    walk_friendly: true
+    night_safe: true
+    aliases: ["Senso-ji"]
+    notes: "Senso-ji temple and old Tokyo streets."
+    reviewed: false
+  - slug: shimokitazawa
+    name: "Shimokitazawa"
+    centre: {lat: 35.6617, lng: 139.6663}
+    radius_m: 700
+    walk_friendly: true
+    night_safe: true
+    aliases: ["Shimokita"]
+    notes: "Vintage shops, small music venues and cafes."
+    reviewed: false

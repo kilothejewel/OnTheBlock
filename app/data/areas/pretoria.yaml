@@ -1,0 +1,50 @@
+# Areas in Pretoria: neighbourhoods a Plan can stay inside (GLOSSARY: Area).
+# Loaded by app/services/areas.py; served at GET /api/v1/cities/pretoria/areas.
+#
+# centre        from OpenStreetMap (Nominatim), 16 Nov 2026
+# radius_m      roughly how far the Area reaches from its centre
+# walk_friendly fine to walk between nearby Stops by day; feeds transport legs (#97)
+# night_safe    fine to walk between Stops after dark; feeds the validator (#99).
+#               false whenever we're not sure: a night leg is e-hailing then.
+# reviewed      true once a local (Cameron, for Cape Town) has checked the Area
+# aliases       other names people use for it in chat
+#
+# DRAFT: written from public knowledge, not yet checked by a local.
+
+areas:
+  - slug: hatfield
+    name: "Hatfield"
+    centre: {lat: -25.7476, lng: 28.2379}
+    radius_m: 1000
+    walk_friendly: true
+    night_safe: false
+    aliases: ["Hatfield Square", "Tuks"]
+    notes: "University area with student bars and the Gautrain station."
+    reviewed: false
+  - slug: brooklyn
+    name: "Brooklyn"
+    centre: {lat: -25.7656, lng: 28.2397}
+    radius_m: 1200
+    walk_friendly: false
+    night_safe: false
+    aliases: ["Brooklyn Mall"]
+    notes: "Upmarket suburb with restaurants and the mall."
+    reviewed: false
+  - slug: menlyn
+    name: "Menlyn"
+    centre: {lat: -25.7842, lng: 28.2756}
+    radius_m: 1500
+    walk_friendly: false
+    night_safe: false
+    aliases: ["Menlyn Maine", "Menlyn Park"]
+    notes: "Menlyn Maine's restaurants and bars, and big malls."
+    reviewed: false
+  - slug: church-square
+    name: "Church Square and the CBD"
+    centre: {lat: -25.7465, lng: 28.1881}
+    radius_m: 1200
+    walk_friendly: false
+    night_safe: false
+    aliases: ["Church Square", "CBD", "Union Buildings"]
+    notes: "Historic centre and the Union Buildings; visit by day."
+    reviewed: false

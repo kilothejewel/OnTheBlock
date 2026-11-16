@@ -1,0 +1,50 @@
+# Areas in Durban: neighbourhoods a Plan can stay inside (GLOSSARY: Area).
+# Loaded by app/services/areas.py; served at GET /api/v1/cities/durban/areas.
+#
+# centre        from OpenStreetMap (Nominatim), 16 Nov 2026
+# radius_m      roughly how far the Area reaches from its centre
+# walk_friendly fine to walk between nearby Stops by day; feeds transport legs (#97)
+# night_safe    fine to walk between Stops after dark; feeds the validator (#99).
+#               false whenever we're not sure: a night leg is e-hailing then.
+# reviewed      true once a local (Cameron, for Cape Town) has checked the Area
+# aliases       other names people use for it in chat
+#
+# DRAFT: written from public knowledge, not yet checked by a local.
+
+areas:
+  - slug: florida-road
+    name: "Florida Road and Morningside"
+    centre: {lat: -29.8184, lng: 31.0181}
+    radius_m: 1000
+    walk_friendly: true
+    night_safe: false
+    aliases: ["Florida Road", "Morningside"]
+    notes: "Restaurant and bar strip; the main night-out street."
+    reviewed: false
+  - slug: umhlanga
+    name: "Umhlanga"
+    centre: {lat: -29.73, lng: 31.0828}
+    radius_m: 2000
+    walk_friendly: true
+    night_safe: false
+    aliases: ["Umhlanga Rocks", "Gateway"]
+    notes: "Beach town with the promenade, lighthouse and Gateway mall."
+    reviewed: false
+  - slug: beachfront
+    name: "Durban Beachfront"
+    centre: {lat: -29.8486, lng: 31.0363}
+    radius_m: 2000
+    walk_friendly: true
+    night_safe: false
+    aliases: ["Golden Mile", "uShaka", "North Beach"]
+    notes: "The Golden Mile promenade and uShaka Marine World; by day."
+    reviewed: false
+  - slug: glenwood
+    name: "Glenwood"
+    centre: {lat: -29.8612, lng: 30.9946}
+    radius_m: 1000
+    walk_friendly: false
+    night_safe: false
+    aliases: ["Bulwer Road"]
+    notes: "Leafy suburb with independent cafes and restaurants."
+    reviewed: false

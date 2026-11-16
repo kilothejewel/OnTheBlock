@@ -1,0 +1,50 @@
+# Areas in Miami: neighbourhoods a Plan can stay inside (GLOSSARY: Area).
+# Loaded by app/services/areas.py; served at GET /api/v1/cities/miami/areas.
+#
+# centre        from OpenStreetMap (Nominatim), 16 Nov 2026
+# radius_m      roughly how far the Area reaches from its centre
+# walk_friendly fine to walk between nearby Stops by day; feeds transport legs (#97)
+# night_safe    fine to walk between Stops after dark; feeds the validator (#99).
+#               false whenever we're not sure: a night leg is e-hailing then.
+# reviewed      true once a local (Cameron, for Cape Town) has checked the Area
+# aliases       other names people use for it in chat
+#
+# DRAFT: written from public knowledge, not yet checked by a local.
+
+areas:
+  - slug: south-beach
+    name: "South Beach"
+    centre: {lat: 25.7744, lng: -80.1332}
+    radius_m: 1500
+    walk_friendly: true
+    night_safe: true
+    aliases: ["SoBe", "Ocean Drive"]
+    notes: "Art Deco district, beach and Ocean Drive."
+    reviewed: false
+  - slug: wynwood
+    name: "Wynwood"
+    centre: {lat: 25.8014, lng: -80.1991}
+    radius_m: 800
+    walk_friendly: true
+    night_safe: false
+    aliases: ["Wynwood Walls"]
+    notes: "Street art, galleries and breweries."
+    reviewed: false
+  - slug: little-havana
+    name: "Little Havana"
+    centre: {lat: 25.7682, lng: -80.2335}
+    radius_m: 1000
+    walk_friendly: true
+    night_safe: false
+    aliases: ["Calle Ocho"]
+    notes: "Cuban food and music on Calle Ocho."
+    reviewed: false
+  - slug: brickell
+    name: "Brickell"
+    centre: {lat: 25.7615, lng: -80.1929}
+    radius_m: 1000
+    walk_friendly: true
+    night_safe: true
+    aliases: ["Brickell City Centre"]
+    notes: "Downtown high-rises, restaurants and rooftop bars."
+    reviewed: false
