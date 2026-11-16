@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { Compass, Sparkles, CalendarDays, Heart, LogOut } from 'lucide-react';
+import { Compass, Sparkles, CalendarDays, Heart, LogIn, LogOut } from 'lucide-react';
 import Logo from './Logo';
 
+// id is the first part of the tab's path (/trips/12 is the Trips tab).
 const TABS = [
-  { id: 'discover', label: 'Discover', Icon: Compass },
-  { id: 'planner', label: 'Plan', Icon: Sparkles },
-  { id: 'trips', label: 'Trips', Icon: CalendarDays },
-  { id: 'saved', label: 'Saved', Icon: Heart },
+  { id: 'discover', path: '/discover', label: 'Discover', Icon: Compass },
+  { id: 'plan', path: '/plan', label: 'Plan', Icon: Sparkles },
+  { id: 'trips', path: '/trips', label: 'Trips', Icon: CalendarDays },
+  { id: 'saved', path: '/saved', label: 'Saved', Icon: Heart },
 ];
 
 function AccountMenu({ username, onLogout }) {
@@ -52,25 +53,26 @@ function AccountMenu({ username, onLogout }) {
   );
 }
 
-export function TopBar({ activeTab, onNavigate, savedCount, username, onLogout }) {
+// onNavigate(path). Without a username (signed out) it offers Log in instead of the account menu.
+export function TopBar({ activeTab, onNavigate, savedCount, username, onLogout, onLogin }) {
   return (
     <header className="topbar">
       <div className="topbar__inner">
         <a
-          href="#discover"
+          href="/discover"
           className="wordmark"
-          onClick={(e) => { e.preventDefault(); onNavigate('discover'); }}
+          onClick={(e) => { e.preventDefault(); onNavigate('/discover'); }}
         >
           <Logo />
         </a>
         <nav className="topnav" aria-label="Main">
-          {TABS.map(({ id, label, Icon }) => (
+          {TABS.map(({ id, path, label, Icon }) => (
             <button
               key={id}
               type="button"
               className="topnav__link"
               aria-current={activeTab === id ? 'page' : undefined}
-              onClick={() => onNavigate(id)}
+              onClick={() => onNavigate(path)}
             >
               <Icon size={18} aria-hidden="true" />
               {label}
@@ -78,7 +80,13 @@ export function TopBar({ activeTab, onNavigate, savedCount, username, onLogout }
             </button>
           ))}
         </nav>
-        <AccountMenu username={username} onLogout={onLogout} />
+        {username ? (
+          <AccountMenu username={username} onLogout={onLogout} />
+        ) : (
+          <button type="button" className="btn btn--primary" onClick={onLogin}>
+            <LogIn size={18} aria-hidden="true" /> Log in
+          </button>
+        )}
       </div>
     </header>
   );
@@ -87,13 +95,13 @@ export function TopBar({ activeTab, onNavigate, savedCount, username, onLogout }
 export function BottomNav({ activeTab, onNavigate, savedCount }) {
   return (
     <nav className="bottomnav" aria-label="Main">
-      {TABS.map(({ id, label, Icon }) => (
+      {TABS.map(({ id, path, label, Icon }) => (
         <button
           key={id}
           type="button"
           className="bottomnav__link"
           aria-current={activeTab === id ? 'page' : undefined}
-          onClick={() => onNavigate(id)}
+          onClick={() => onNavigate(path)}
         >
           <Icon size={22} aria-hidden="true" />
           {label}
