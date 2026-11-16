@@ -1,6 +1,6 @@
 # Contributing to On the Block
 
-Thanks for helping out. This guide gets you from a fresh clone to an open pull request. You don't need any API keys: without them the app runs on built-in **Demo data** for its five cities (Miami, London, Cape Town, Johannesburg, Tokyo).
+Thanks for helping out. This guide gets you from a fresh clone to an open pull request. You don't need any API keys: without them the app runs on built-in **Demo data** for every city in `app/data/cities.yaml` (Cape Town, Johannesburg, Durban, Pretoria, Stellenbosch, Miami, London, Tokyo).
 
 Before you start, skim:
 

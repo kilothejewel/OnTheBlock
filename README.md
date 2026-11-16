@@ -14,7 +14,7 @@
 <p align="center"><img src="docs/screenshot.png" width="800" alt="On the Block planning a night out in Cape Town"></p>
 -->
 
-On the Block finds real places in Miami, London, Cape Town, Johannesburg and Tokyo, and turns them into a Plan: a short run of Stops near each other, priced in local currency for your Budget tier. Save the places you like and keep your Plans in Trips.
+On the Block finds real places in South Africa (Cape Town, Johannesburg, Durban, Pretoria and Stellenbosch), plus Miami, London and Tokyo, and turns them into a Plan: a short run of Stops near each other, priced in local currency for your Budget tier. Save the places you like and keep your Plans in Trips.
 
 ## Quickstart
 

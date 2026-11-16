@@ -65,6 +65,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/cities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Cities
+         * @description The cities that take new Plans, for the web and mobile pickers: South
+         *     African cities first (live, then beta), then international ones. Hidden
+         *     cities are left out. Open to everyone.
+         */
+        get: operations["list_cities_api_v1_cities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/hotspots/recommend": {
         parameters: {
             query?: never;
@@ -263,6 +285,21 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** CityOut */
+        CityOut: {
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** Province */
+            province: string;
+            /** Country Code */
+            country_code: string;
+            /** Currency */
+            currency: string;
+            /** Status */
+            status: string;
+        };
         /**
          * GeneratedItinerary
          * @description A Plan from /itineraries/generate: not saved yet.
@@ -376,10 +413,10 @@ export interface components {
         ItineraryGenerate: {
             /**
              * City
-             * @description Supported city slug (e.g. 'cape-town')
+             * @description A live or beta city's slug (e.g. 'cape-town'); see GET /cities
              * @enum {string}
              */
-            city: "miami" | "london" | "cape-town" | "johannesburg" | "tokyo";
+            city: "cape-town" | "johannesburg" | "durban" | "pretoria" | "stellenbosch" | "miami" | "london" | "tokyo";
             /**
              * Budget
              * @description Budget level ($, $$, or $$$)
@@ -692,11 +729,31 @@ export interface operations {
             };
         };
     };
+    list_cities_api_v1_cities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CityOut"][];
+                };
+            };
+        };
+    };
     recommend_hotspots_api_v1_hotspots_recommend_get: {
         parameters: {
             query: {
                 query: string;
-                city?: "miami" | "london" | "cape-town" | "johannesburg" | "tokyo";
+                city?: "cape-town" | "johannesburg" | "durban" | "pretoria" | "stellenbosch" | "miami" | "london" | "tokyo";
             };
             header?: never;
             path?: never;

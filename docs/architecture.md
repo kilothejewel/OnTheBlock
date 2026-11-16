@@ -27,6 +27,10 @@ On the Block is an API-first web app: a React site talks to a FastAPI backend, w
 
 Some code names still predate the [glossary](../GLOSSARY.md): `Itinerary` is a Plan, an itinerary's `items` are its Stops, and `Hotspot` is a Saved place.
 
+### Cities
+
+`app/data/cities.yaml` is the city registry: name, province, currency, time zone, centre, metro `bounds` and `launch_status` (`live`, `beta` or `hidden`) per city. It's validated when the API starts; a broken file stops startup with the reason. Only `live` and `beta` cities take new Plans and searches; a `hidden` city's saved Plans still open. Google Text Search is restricted to a city's `bounds`, and results outside them are dropped. `GET /api/v1/cities` lists the visible cities, South Africa first, for the web and mobile pickers.
+
 ### How a Plan is generated
 
 1. The web app sends the city, Budget tier and Vibes.
@@ -38,7 +42,7 @@ The [roadmap](roadmap.md) changes this flow in step 2 (Mode, Area, Date, opening
 
 ### Demo data
 
-Without `OTB_GOOGLE_PLACES_API_KEY` or `OTB_OPENAI_API_KEY`, the matching service serves built-in Demo data for the five cities, so the app runs fully with no keys. See [ADR 0003](adr/0003-no-silent-demo-fallback.md) for when Demo data may and may not be used.
+Without `OTB_GOOGLE_PLACES_API_KEY` or `OTB_OPENAI_API_KEY`, the matching service serves built-in Demo data for every city in the registry (`app/data/cities.yaml`), so the app runs fully with no keys. See [ADR 0003](adr/0003-no-silent-demo-fallback.md) for when Demo data may and may not be used.
 
 ### Auth and limits
 

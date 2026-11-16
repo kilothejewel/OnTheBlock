@@ -109,12 +109,14 @@ class GooglePlacesService:
         if not self.live:
             return demo_search(city, query)
 
+        (south, west), (north, east) = city.bounds
         body = {
             "textQuery": f"{query} in {city.name}",
-            "locationBias": {
-                "circle": {
-                    "center": {"latitude": city.lat, "longitude": city.lng},
-                    "radius": float(city.radius_m),
+            # Only places inside the city's metro extent (app/data/cities.yaml).
+            "locationRestriction": {
+                "rectangle": {
+                    "low": {"latitude": south, "longitude": west},
+                    "high": {"latitude": north, "longitude": east},
                 }
             },
             "regionCode": city.country_code,
@@ -125,7 +127,11 @@ class GooglePlacesService:
 
         places = []
         for item in data.get("places", []):
-            places.append(parse_place(item))
+            place = parse_place(item)
+            lat, lng = place["latitude"], place["longitude"]
+            if lat is not None and lng is not None and not city.contains(lat, lng):
+                continue  # an edge case Google can return just outside the rectangle
+            places.append(place)
             photos = item.get("photos") or []
             if item.get("id") and photos:
                 self._remember(self._photo_refs, item["id"], photos[0])

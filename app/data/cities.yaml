@@ -1,0 +1,127 @@
+# Cities the app plans in, loaded and validated at startup (app/core/cities.py).
+#
+# bounds: the city's real metro extent as south-west and north-east corners.
+#   Text Search is restricted to it, results outside it are dropped, and the
+#   places catalogue ingest (#119) clips to it. Taken from OpenStreetMap's
+#   administrative boundaries (Nominatim, 16 Nov 2026); see each note.
+# centre / search_radius_m: where search results are centred.
+# launch_status: live (planned for everyone), beta (planned, marked beta),
+#   hidden (no new Plans or searches; saved Plans still open).
+# areas_file: the city's Areas (#35), relative to app/data. May not exist yet.
+# usd_rate: rough units per US dollar, only for Demo data cost estimates.
+#
+# Order matters within each group: the picker lists South African cities
+# first (live, then beta), then international ones.
+
+cities:
+  - slug: cape-town
+    name: Cape Town
+    province: Western Cape
+    country_code: ZA
+    currency: ZAR
+    timezone: Africa/Johannesburg
+    centre: {lat: -33.9249, lng: 18.4241}
+    search_radius_m: 20000
+    # City of Cape Town, mainland only: OSM's box also takes in the Prince Edward Islands.
+    bounds: {sw: {lat: -34.36, lng: 18.30}, ne: {lat: -33.47, lng: 19.00}}
+    launch_status: beta
+    areas_file: areas/cape-town.yaml
+    usd_rate: 18
+
+  - slug: johannesburg
+    name: Johannesburg
+    province: Gauteng
+    country_code: ZA
+    currency: ZAR
+    timezone: Africa/Johannesburg
+    centre: {lat: -26.2041, lng: 28.0473}
+    search_radius_m: 25000
+    # City of Johannesburg Metropolitan Municipality.
+    bounds: {sw: {lat: -26.5263, lng: 27.7143}, ne: {lat: -25.9028, lng: 28.2145}}
+    launch_status: beta
+    areas_file: areas/johannesburg.yaml
+    usd_rate: 18
+
+  - slug: durban
+    name: Durban
+    province: KwaZulu-Natal
+    country_code: ZA
+    currency: ZAR
+    timezone: Africa/Johannesburg
+    centre: {lat: -29.8587, lng: 31.0218}
+    search_radius_m: 25000
+    # eThekwini Metropolitan Municipality.
+    bounds: {sw: {lat: -30.2686, lng: 30.5600}, ne: {lat: -29.5011, lng: 31.1858}}
+    launch_status: beta
+    areas_file: areas/durban.yaml
+    usd_rate: 18
+
+  - slug: pretoria
+    name: Pretoria
+    province: Gauteng
+    country_code: ZA
+    currency: ZAR
+    timezone: Africa/Johannesburg
+    centre: {lat: -25.7479, lng: 28.2293}
+    search_radius_m: 25000
+    # City of Tshwane Metropolitan Municipality.
+    bounds: {sw: {lat: -26.0781, lng: 27.8904}, ne: {lat: -25.1096, lng: 29.0984}}
+    launch_status: beta
+    areas_file: areas/pretoria.yaml
+    usd_rate: 18
+
+  - slug: stellenbosch
+    name: Stellenbosch
+    province: Western Cape
+    country_code: ZA
+    currency: ZAR
+    timezone: Africa/Johannesburg
+    centre: {lat: -33.9321, lng: 18.8602}
+    search_radius_m: 10000
+    # Stellenbosch Local Municipality (town and winelands).
+    bounds: {sw: {lat: -34.0634, lng: 18.7083}, ne: {lat: -33.7934, lng: 19.2438}}
+    launch_status: beta
+    areas_file: areas/stellenbosch.yaml
+    usd_rate: 18
+
+  - slug: miami
+    name: Miami
+    province: Florida
+    country_code: US
+    currency: USD
+    timezone: America/New_York
+    centre: {lat: 25.7617, lng: -80.1918}
+    search_radius_m: 25000
+    # Miami-Dade County.
+    bounds: {sw: {lat: 25.1374, lng: -80.8736}, ne: {lat: 25.9792, lng: -80.0428}}
+    launch_status: beta
+    areas_file: areas/miami.yaml
+    usd_rate: 1
+
+  - slug: london
+    name: London
+    province: England
+    country_code: GB
+    currency: GBP
+    timezone: Europe/London
+    centre: {lat: 51.5072, lng: -0.1276}
+    search_radius_m: 20000
+    # Greater London.
+    bounds: {sw: {lat: 51.2868, lng: -0.5104}, ne: {lat: 51.6919, lng: 0.3340}}
+    launch_status: beta
+    areas_file: areas/london.yaml
+    usd_rate: 0.78
+
+  - slug: tokyo
+    name: Tokyo
+    province: Tokyo
+    country_code: JP
+    currency: JPY
+    timezone: Asia/Tokyo
+    centre: {lat: 35.6762, lng: 139.6503}
+    search_radius_m: 20000
+    # Tokyo's 23 wards and Tama area; OSM's Tokyo Metropolis box takes in the Ogasawara Islands.
+    bounds: {sw: {lat: 35.50, lng: 138.94}, ne: {lat: 35.90, lng: 139.92}}
+    launch_status: beta
+    areas_file: areas/tokyo.yaml
+    usd_rate: 150
