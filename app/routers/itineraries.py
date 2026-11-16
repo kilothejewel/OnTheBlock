@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import List
 from app.core.database import get_db
@@ -10,6 +11,7 @@ from app.models.user import User
 from app.models.itinerary import Itinerary
 from app.schemas.itinerary import GeneratedItinerary, ItineraryCreate, ItineraryResponse, ItineraryGenerate
 from app.services.itinerary import itinerary_service
+from app.services.plan_quota import give_back_plan, take_plan
 from app.core.observability import call_summary
 
 log = logging.getLogger(__name__)
@@ -22,20 +24,36 @@ async def generate_itinerary(
     request: Request,
     response: Response,
     params: ItineraryGenerate,
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
     Generate an AI travel itinerary based on target destination, budget, and vibes.
     This does NOT save it to the DB immediately, allowing client previews first.
 
-    Rate limited to 5 requests/minute per client: each call fans out to OpenAI and
+    Rate limited to 5 requests/minute per user: each call fans out to OpenAI and
     multiple Google Places lookups, making it the most expensive route in the API.
+    Each user can also start only OTB_PLANS_PER_USER_PER_DAY Plans a UTC day;
+    past that it's a 429 saying when the quota resets.
     """
+    quota = take_plan(db, current_user)
+    if not quota.allowed:
+        log.info("daily plan quota reached", extra={"limit": quota.limit})
+        return JSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            headers={"Retry-After": str(quota.retry_after_seconds)},
+            content={
+                "detail": f"You've made {quota.limit} Plans today, your daily limit. You can make more from 00:00 UTC.",
+                "limit": quota.limit,
+                "resets_at": quota.resets_at.isoformat(),
+            },
+        )
     try:
         itinerary = await itinerary_service.generate_itinerary(params)
         log.info("plan generated", extra={"city": params.city, "demo": bool(itinerary.get("demo")), **call_summary()})
         return itinerary
     except Exception as e:
+        give_back_plan(db, current_user, quota.day)
         log.warning("plan generation failed", extra={"city": params.city, "error": str(e), **call_summary()})
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

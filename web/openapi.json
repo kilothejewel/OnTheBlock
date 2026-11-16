@@ -339,7 +339,7 @@
           "itineraries"
         ],
         "summary": "Generate Itinerary",
-        "description": "Generate an AI travel itinerary based on target destination, budget, and vibes.\nThis does NOT save it to the DB immediately, allowing client previews first.\n\nRate limited to 5 requests/minute per client: each call fans out to OpenAI and\nmultiple Google Places lookups, making it the most expensive route in the API.",
+        "description": "Generate an AI travel itinerary based on target destination, budget, and vibes.\nThis does NOT save it to the DB immediately, allowing client previews first.\n\nRate limited to 5 requests/minute per user: each call fans out to OpenAI and\nmultiple Google Places lookups, making it the most expensive route in the API.\nEach user can also start only OTB_PLANS_PER_USER_PER_DAY Plans a UTC day;\npast that it's a 429 saying when the quota resets.",
         "operationId": "generate_itinerary_api_v1_itineraries_generate_post",
         "requestBody": {
           "content": {
