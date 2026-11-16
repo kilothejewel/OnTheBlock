@@ -9,10 +9,6 @@ updates:
     groups:
       python:
         patterns: ["*"]
-    ignore:
-      # passlib 1.7.x breaks on bcrypt 4.1+ (see requirements.txt)
-      - dependency-name: bcrypt
-        versions: [">=4.1"]
 
   - package-ecosystem: npm
     directory: /web
