@@ -16,6 +16,7 @@ class CityOut(BaseModel):
     country_code: str
     currency: str
     status: str  # "live" or "beta"
+    aliases: List[str]  # other names the search box matches, e.g. "Jozi"
 
 
 @router.get("", response_model=List[CityOut])
@@ -28,7 +29,7 @@ def list_cities() -> List[CityOut]:
     return [
         CityOut(
             slug=c.slug, name=c.name, province=c.province, country_code=c.country_code,
-            currency=c.currency, status=c.launch_status,
+            currency=c.currency, status=c.launch_status, aliases=list(c.aliases),
         )
         for c in visible_cities()
     ]

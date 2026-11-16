@@ -84,7 +84,7 @@ Every route that can reach Google or an LLM needs a token; `tests/test_user_limi
 | Access | Dependency | Routes |
 | --- | --- | --- |
 | Public | none | `/health`, `/cities`, `/cities/{slug}/areas`, `/auth/register`, `/auth/login`, `/auth/guest` |
-| Guest or Account | `get_actor` | `/auth/me`, `/itineraries/generate`, `/places`, `/places/{id}/photo`, the chat (#100) |
+| Guest or Account | `get_actor` | `/auth/me`, `/itineraries/generate`, `/places`, `/places/{id}/photo`, `/city-requests` (5 a day), the chat (#100) |
 | Account only | `require_account` | Trips (`/itineraries`), Saved places (`/hotspots`); a Guest gets 401 `account_required` |
 
 Guests (#125): `POST /auth/guest` gives a 30-day token. Limits: `OTB_GUEST_SESSIONS_PER_IP_DAY` (3) new sessions per IP, `OTB_GUEST_PLANS_PER_DAY` (1) Plans per Guest, `OTB_GUEST_PLANS_PER_IP_DAY` (3) and `OTB_GUEST_PLANS_DAY_CAP` (30) for all Guests, and Google calls in the `guests` quota pool. IPs are counted under a keyed hash, never stored. Guests idle for `OTB_GUEST_IDLE_DAYS` (30) are deleted when new Guests arrive. Set `OTB_TURNSTILE_SECRET` to require a Cloudflare Turnstile check.

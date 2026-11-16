@@ -17,6 +17,7 @@ export function AppRoutes() {
         <Route index element={<Navigate to="/discover" replace />} />
         <Route path="discover" element={<DiscoverPage />} />
         <Route path="plan" element={<PlanPage />} />
+        <Route path="plan/:city" element={<PlanPage />} />
         <Route element={<RequireAuth />}>
           <Route path="trips" element={<TripsPage />} />
           <Route path="trips/:id" element={<TripPage />} />

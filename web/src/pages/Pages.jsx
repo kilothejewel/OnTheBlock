@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, Navigate, useNavigate, useParams } from 'react-router';
 import { MapPinOff } from 'lucide-react';
 import DiscoverView from '../components/DiscoverView';
 import { EmptyState, RetryPanel } from '../components/Feedback';
@@ -10,14 +10,26 @@ import { cityBySlug, useCities } from '../lib/cities';
 import { useLibrary, usePlanning, useSession } from '../state/contexts';
 import { useRequireSignIn } from '../state/useRequireSignIn';
 
+// "Request this city" from the city search box (#89). Resolves true once sent.
+function useRequestCity() {
+  const { api } = useSession();
+  const requireSignIn = useRequireSignIn();
+  return requireSignIn(async (text) => {
+    await api('/city-requests', { method: 'POST', body: { text } });
+    return true;
+  });
+}
+
 export function DiscoverPage() {
   const planning = usePlanning();
   const { savedHotspots, toggleSaveHotspot } = useLibrary();
   const requireSignIn = useRequireSignIn();
+  const requestCity = useRequestCity();
   return (
     <DiscoverView
       city={planning.city}
       onCityChange={planning.changeCity}
+      onRequestCity={requestCity}
       searchQuery={planning.searchQuery}
       setSearchQuery={planning.setSearchQuery}
       onSearch={requireSignIn((e) => { if (e) e.preventDefault(); planning.search(); })}
@@ -36,7 +48,21 @@ export function PlanPage() {
   const cities = useCities();
   const { savedHotspots } = useLibrary();
   const requireSignIn = useRequireSignIn();
+  const requestCity = useRequestCity();
   const navigate = useNavigate();
+
+  // /plan/{city} (#89): choosing a city in the search box opens a new Plan there.
+  const { city: cityParam } = useParams();
+  const { city, changeCity, clearPreview } = planning;
+  const known = cityParam ? cityBySlug(cities, cityParam) : null;
+  useEffect(() => {
+    if (known && known.slug !== city) {
+      changeCity(known.slug);
+      clearPreview();
+    }
+  }, [known, city, changeCity, clearPreview]);
+
+  if (cityParam && cities.length > 0 && !known) return <Navigate to="/plan" replace />;
 
   if (planning.generating) {
     return <GeneratingState destination={cityBySlug(cities, planning.city)?.name} duration={planning.duration} />;
@@ -65,7 +91,7 @@ export function PlanPage() {
         <RetryPanel message={planning.planError.message} onRetry={() => planning.generate()} busy={planning.generating} />
       )}
       <PlannerForm
-      city={planning.city} onCityChange={planning.changeCity}
+      city={planning.city} onCityChange={(slug) => navigate(`/plan/${slug}`)} onRequestCity={requestCity}
       budget={planning.budget} setBudget={planning.setBudget}
       duration={planning.duration} setDuration={planning.setDuration}
       preferences={planning.preferences} setPreferences={planning.setPreferences}

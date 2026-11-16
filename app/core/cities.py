@@ -58,6 +58,7 @@ class _CityEntry(BaseModel):
     launch_status: LaunchStatus
     areas_file: str = Field(pattern=r"^areas/[a-z-]+\.yaml$")
     usd_rate: float = Field(gt=0)
+    aliases: List[str] = Field(default_factory=list)  # other names people search for, e.g. "Jozi"
 
     @model_validator(mode="after")
     def _checks(self):
@@ -91,6 +92,7 @@ class City:
     launch_status: str
     areas_file: str  # relative to app/data
     usd_rate: float  # approximate units per US dollar, for Demo data cost estimates only
+    aliases: Tuple[str, ...] = ()  # other names for the city search box (#89)
 
     @property
     def visible(self) -> bool:
@@ -165,6 +167,7 @@ def load_cities(path: Path = CITIES_FILE) -> Dict[str, City]:
             launch_status=entry.launch_status,
             areas_file=entry.areas_file,
             usd_rate=entry.usd_rate,
+            aliases=tuple(entry.aliases),
         )
         for entry in registry.cities
     }

@@ -176,6 +176,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/city-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request City
+         * @description Ask for a city we don't cover yet, from the city search box (#89). For
+         *     accounts and guests, at most 5 a day (UTC) per user.
+         */
+        post: operations["request_city_api_v1_city_requests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/hotspots/recommend": {
         parameters: {
             query?: never;
@@ -566,6 +587,28 @@ export interface components {
             currency: string;
             /** Status */
             status: string;
+            /** Aliases */
+            aliases: string[];
+        };
+        /** CityRequestIn */
+        CityRequestIn: {
+            /**
+             * Text
+             * @description What the person typed into the city search box.
+             */
+            text: string;
+        };
+        /** CityRequestOut */
+        CityRequestOut: {
+            /** Id */
+            id: number;
+            /** Text */
+            text: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /**
          * GeneratedItinerary
@@ -1196,6 +1239,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AreaOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    request_city_api_v1_city_requests_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CityRequestIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CityRequestOut"];
                 };
             };
             /** @description Validation Error */
