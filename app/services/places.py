@@ -68,7 +68,10 @@ def parse_place(item: Dict[str, Any]) -> Dict[str, Any]:
 
 class GooglePlacesService:
     def __init__(self):
-        self.api_key = settings.GOOGLE_PLACES_API_KEY
+        # Search, display details and photos use the otb-display project's key;
+        # the live check of final Stops (#93) uses otb-live's (#44).
+        self.api_key = settings.GOOGLE_DISPLAY_KEY or settings.GOOGLE_PLACES_API_KEY
+        self.live_key = settings.GOOGLE_LIVE_KEY or settings.GOOGLE_PLACES_API_KEY
         # place id -> first photo reference seen in a search, so showing a
         # result's photo needs no extra details call
         self._photo_refs: Dict[str, Dict[str, Any]] = {}
