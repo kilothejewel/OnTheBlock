@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -43,6 +43,30 @@ class Settings(BaseSettings):
 
     #Google Places Settings (optional: without a key, places use demo data)
     GOOGLE_PLACES_API_KEY: Optional[str] = None
+
+    #Free-quota guard (app/services/quota.py)
+    # Per resource: "day" is a limit for all pools together, "month" for all
+    # pools together split between them (see QUOTA_POOL_CAPS). A missing limit
+    # means count only. Each sits just under the provider's free allowance, so
+    # the provider-side caps (#44) are only a backstop. Free allowances change:
+    # set OTB_QUOTA_LIMITS (JSON) rather than editing code. A resource ending
+    # in ".*" covers every resource with that prefix, e.g. each LLM model.
+    QUOTA_LIMITS: Dict[str, Dict[str, int]] = {
+        "google.details_enterprise": {"day": 30, "month": 950},  # free cap 1,000 a month
+        "google.details_pro": {"day": 160, "month": 4750},  # free cap 5,000 a month
+        "google.photos": {"day": 30, "month": 950},  # Place Details Photos; free cap 1,000
+        "google.text_search_enterprise": {"day": 30, "month": 900},  # Discover search (#127, #128)
+        "google.text_ids": {"day": 1000},  # free and uncapped; stops runaway loops
+        "llm.gemini.*": {"day": 200},  # requests a day per model
+        "llm.groq.*": {"day": 500},  # requests a day per model
+    }
+    # Monthly caps for the pools other than "users", per resource. "users" gets
+    # the rest of the monthly limit, so these pools can never eat into it. A
+    # pool with no cap for a resource that has a monthly limit can't use it.
+    QUOTA_POOL_CAPS: Dict[str, Dict[str, int]] = {
+        "eval": {"google.details_enterprise": 200, "google.details_pro": 200},  # #108
+        "guests": {"google.details_enterprise": 150, "google.details_pro": 300, "google.photos": 150},  # #125
+    }
 
     #Auth / JWT Settings
     SECRET_KEY: str
