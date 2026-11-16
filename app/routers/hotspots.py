@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from app.core.cities import PlannableCity, get_city
 from app.core.database import get_db
+from app.core.errors import ServiceUnavailable
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.models.user import User
@@ -34,10 +35,7 @@ async def recommend_hotspots(
         return await places_service.search_places(query, get_city(city))
     except PlacesError as e:
         log.warning("places search failed", extra={"city": city, "error": str(e)})
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Couldn't reach Google Places right now. Please try again.",
-        )
+        raise ServiceUnavailable("places_unavailable", "Couldn't reach Google Places right now. Please try again.")
 
 @router.post("/", response_model=HotspotResponse, status_code=status.HTTP_201_CREATED)
 def save_hotspot(

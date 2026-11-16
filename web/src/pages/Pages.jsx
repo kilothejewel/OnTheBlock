@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { MapPinOff } from 'lucide-react';
 import DiscoverView from '../components/DiscoverView';
-import { EmptyState } from '../components/Feedback';
+import { EmptyState, RetryPanel } from '../components/Feedback';
 import { GeneratingState, PlannerForm } from '../components/PlannerView';
 import TripView from '../components/TripView';
 import { SavedView, TripsView } from '../components/CollectionViews';
@@ -22,6 +22,8 @@ export function DiscoverPage() {
       setSearchQuery={planning.setSearchQuery}
       onSearch={requireSignIn((e) => { if (e) e.preventDefault(); planning.search(); })}
       searchLoading={planning.searchLoading}
+      searchError={planning.searchError}
+      onRetry={() => planning.search()}
       places={planning.places}
       savedHotspots={savedHotspots}
       onToggleSave={requireSignIn(toggleSaveHotspot)}
@@ -58,14 +60,19 @@ export function PlanPage() {
     );
   }
   return (
-    <PlannerForm
+    <>
+      {planning.planError && (
+        <RetryPanel message={planning.planError.message} onRetry={() => planning.generate()} busy={planning.generating} />
+      )}
+      <PlannerForm
       city={planning.city} onCityChange={planning.changeCity}
       budget={planning.budget} setBudget={planning.setBudget}
       duration={planning.duration} setDuration={planning.setDuration}
       preferences={planning.preferences} setPreferences={planning.setPreferences}
       onSubmit={requireSignIn((e) => { if (e) e.preventDefault(); planning.generate(); })}
       generating={planning.generating}
-    />
+      />
+    </>
   );
 }
 

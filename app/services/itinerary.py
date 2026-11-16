@@ -5,10 +5,13 @@ from typing import Dict, Any, List
 from openai import AsyncOpenAI
 from app.core.cities import City, get_city
 from app.core.config import settings
+from app.core.errors import ServiceUnavailable
 from app.core.observability import count_call
 from app.schemas.itinerary import ItineraryGenerate
+from app.schemas.llm import Candidate, SkeletonSlot
 from app.services.demo_places import demo_slot
 from app.services.interests import wants_slot
+from app.services.llm import llm
 from app.services.places import places_service
 
 log = logging.getLogger(__name__)
@@ -55,8 +58,9 @@ class ItineraryService:
         """
         city = get_city(params.city)
 
-        # Fall back to the city's demo itinerary if OpenAI is not configured
-        if not self.client:
+        # Demo data only when there are no keys at all (ADR 0003). With a Google
+        # key but no OpenAI key, the free-tier chain writes the Plan instead.
+        if not places_service.live:
             return self._get_demo_itinerary(params, city)
 
         categories = ["breakfast", "lunch", "dinner"]
@@ -124,6 +128,16 @@ class ItineraryService:
             # Record this day's candidate ids so later days draw from fresh places.
             used_place_ids.update(day_used_ids)
             candidates_by_day[f"day_{day}"] = day_candidates
+
+        if not any(slot for day in candidates_by_day.values() for slot in day.values()):
+            # Google gave us nothing to plan with: say so instead of inventing a Plan.
+            raise ServiceUnavailable(
+                "places_unavailable",
+                f"We couldn't find places in {city.name} for your Plan right now. Please try again in a moment.",
+            )
+
+        if not self.client:
+            return await self._plan_from_chain(params, city, candidates_by_day)
 
         candidates_json = json.dumps(candidates_by_day, indent=2)
 
@@ -209,8 +223,68 @@ class ItineraryService:
             return itinerary_data
 
         except Exception as e:
-            log.warning("OpenAI call failed; using Demo data", extra={"error": str(e)})
-            return self._get_demo_itinerary(params, city)
+            # Never Demo data with keys set: the free-tier chain (ending at the
+            # rules client) plans from the same real candidates.
+            log.warning("OpenAI call failed; planning with the free-tier chain", extra={"error": str(e)})
+            return await self._plan_from_chain(params, city, candidates_by_day)
+
+    async def _plan_from_chain(self, params: ItineraryGenerate, city: City, candidates_by_day: Dict[str, Dict[str, List[Dict[str, Any]]]]) -> Dict[str, Any]:
+        """
+        A Plan from the LLM chain (Gemini, Groq, then the rules client, which
+        never fails) over the real candidates: one candidate per Slot, picked
+        by key, so every Stop is a real, offered place. Costs are the usual
+        per-Slot estimates, never the model's.
+        """
+        times = {slot: time for time, slot in DEMO_DAY}
+        times[DEMO_NIGHT[1]] = DEMO_NIGHT[0]
+        skeleton, candidates, by_key, slot_meta = [], {}, {}, {}
+        n = 0
+        for day_key, day_slots in candidates_by_day.items():
+            day = int(day_key.split("_")[1])
+            for category, places in day_slots.items():
+                if not places:
+                    continue
+                n += 1
+                slot_id = f"s{n}"
+                skeleton.append(SkeletonSlot(slot_id=slot_id, kind=category, start=times.get(category, "12:00 PM")))
+                candidates[slot_id] = []
+                for m, place in enumerate(places, start=1):
+                    key = f"{slot_id}c{m}"
+                    by_key[key] = place
+                    candidates[slot_id].append(Candidate(key=key, name=place.get("name") or "Place", score=float(place.get("rating") or 0)))
+                slot_meta[slot_id] = (day, category)
+
+        composed = await llm.compose_plan(skeleton, candidates, {"city": city.slug})
+        items = []
+        for stop in composed.stops:
+            day, category = slot_meta[stop.slot_id]
+            place = by_key[stop.candidate_key]
+            items.append({
+                "day": day,
+                "time": times.get(category, "12:00 PM"),
+                "activity": DEMO_COPY.get(category, ("Explore", ""))[0],
+                "description": stop.description,
+                "estimated_cost": local_cost(DEMO_COSTS_USD.get(category, DEMO_COSTS_USD["lunch"])[params.budget], city),
+                "location": place.get("name"),
+                "address": place.get("address"),
+                "google_place_id": place.get("google_place_id"),
+                "latitude": place.get("latitude"),
+                "longitude": place.get("longitude"),
+                "verified": True,
+                "category": category,
+            })
+        days = params.duration_days
+        log.info("planned with the LLM chain", extra={"provider": composed.meta.provider, "fallbacks": composed.meta.fallbacks})
+        return {
+            "title": f"A day out in {city.name}" if days == 1 else f"{days} days in {city.name}",
+            "destination": city.name,
+            "city": city.slug,
+            "currency": city.currency,
+            "budget": params.budget,
+            "duration_days": days,
+            "items": items,
+            "demo": False,
+        }
 
     def _validate_and_enrich_items(
         self,

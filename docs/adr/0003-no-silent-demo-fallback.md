@@ -4,4 +4,5 @@ Demo data is used only when the app has no API keys (local development, contribu
 
 ## Consequences
 
-- At the time of writing the planner still falls back to Demo data on any OpenAI error; removing that is step 3 on the roadmap.
+- Since #42, with keys set an LLM failure moves down the provider chain (Gemini, Groq, then the rules client, #90), so it still returns a Plan of real places. A failure that leaves no Plan at all (Google unreachable, no candidate places, the database down) returns 503 with `{code, message, retryable}`, and the web shows the message with a Retry button (`app/core/errors.py`).
+- Demo data is served only when the app has no Google key, and is always labelled.

@@ -101,7 +101,7 @@ class TestCallCounts:
 
         async def fake_slot(city, category, budget, max_results=5):
             observability.count_call("google")
-            return []
+            return [{"google_place_id": f"ChIJ{category}0001", "name": f"A {category} place", "rating": 4.5}]
 
         class FakeOpenAI:
             class chat:
@@ -112,6 +112,7 @@ class TestCallCounts:
                         return type("R", (), {"choices": [type("C", (), {"message": message})]})
 
         monkeypatch.setattr(itinerary_module.places_service, "search_places_for_slot", fake_slot)
+        monkeypatch.setattr(itinerary_module.places_service, "api_key", "test-key")
         monkeypatch.setattr(itinerary_module.itinerary_service, "client", FakeOpenAI())
         caplog.set_level(logging.INFO)
 

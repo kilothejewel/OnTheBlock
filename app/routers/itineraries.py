@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import List
 from app.core.database import get_db
+from app.core.errors import ServiceUnavailable
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.models.user import User
@@ -52,6 +53,10 @@ async def generate_itinerary(
         itinerary = await itinerary_service.generate_itinerary(params)
         log.info("plan generated", extra={"city": params.city, "demo": bool(itinerary.get("demo")), **call_summary()})
         return itinerary
+    except ServiceUnavailable as e:
+        give_back_plan(db, current_user, quota.day)
+        log.warning("plan generation unavailable", extra={"city": params.city, "code": e.code, **call_summary()})
+        raise
     except Exception as e:
         give_back_plan(db, current_user, quota.day)
         log.warning("plan generation failed", extra={"city": params.city, "error": str(e), **call_summary()})

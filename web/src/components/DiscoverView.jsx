@@ -1,7 +1,7 @@
 import { Search, LoaderCircle, Compass, Info } from 'lucide-react';
 import PlaceCard from './PlaceCard';
 import CityPicker from './CityPicker';
-import { EmptyState } from './Feedback';
+import { EmptyState, RetryPanel } from './Feedback';
 import { cityBySlug, useCities } from '../lib/cities';
 import { isDemoPlaceId } from '../lib/places';
 
@@ -19,7 +19,7 @@ function SkeletonCard() {
   );
 }
 
-export default function DiscoverView({ city, onCityChange, searchQuery, setSearchQuery, onSearch, searchLoading, places, savedHotspots, onToggleSave }) {
+export default function DiscoverView({ city, onCityChange, searchQuery, setSearchQuery, onSearch, searchLoading, searchError, onRetry, places, savedHotspots, onToggleSave }) {
   const savedIds = new Set(savedHotspots.map((h) => h.google_place_id));
   const cityName = cityBySlug(useCities(), city)?.name;
   const isDemo = places.length > 0 && places.every((p) => isDemoPlaceId(p.google_place_id));
@@ -61,6 +61,8 @@ export default function DiscoverView({ city, onCityChange, searchQuery, setSearc
         <div className="grid" aria-busy="true">
           {[0, 1, 2].map((i) => <SkeletonCard key={i} />)}
         </div>
+      ) : searchError ? (
+        <RetryPanel message={searchError.message} onRetry={onRetry} busy={searchLoading} />
       ) : places.length === 0 ? (
         <EmptyState icon={Compass} title="Start with a search">
           Try a type of place in {cityName}, like “brunch spots” or “rooftop bars”.

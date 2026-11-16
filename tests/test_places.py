@@ -106,7 +106,7 @@ def test_every_google_request_goes_through_the_shared_client(client, auth_header
 
 
 @pytest.mark.parametrize("failure", [httpx.ConnectError("no route to host"), httpx.ReadTimeout("timed out")])
-def test_google_being_unreachable_is_a_clear_502(client, auth_headers, google, failure):
+def test_google_being_unreachable_is_a_clear_503(client, auth_headers, google, failure):
     def fail(request):
         raise failure
 
@@ -114,16 +114,18 @@ def test_google_being_unreachable_is_a_clear_502(client, auth_headers, google, f
 
     resp = client.get("/api/v1/hotspots/recommend?query=cafes&city=london", headers=auth_headers)
 
-    assert resp.status_code == 502
+    assert resp.status_code == 503
+    assert resp.json()["code"] == "places_unavailable" and resp.json()["retryable"] is True
     assert str(failure) not in resp.json()["detail"]  # internals stay on the server
 
 
-def test_google_refusing_a_request_is_a_clear_502(client, auth_headers, google):
+def test_google_refusing_a_request_is_a_clear_503(client, auth_headers, google):
     google.respond_with(lambda request: httpx.Response(429, json={"error": {"message": "Quota exceeded"}}))
 
     resp = client.get("/api/v1/hotspots/recommend?query=cafes&city=london", headers=auth_headers)
 
-    assert resp.status_code == 502
+    assert resp.status_code == 503
+    assert resp.json()["code"] == "places_unavailable" and resp.json()["retryable"] is True
     assert "Quota" not in resp.json()["detail"]
 
 
@@ -172,13 +174,14 @@ def test_results_outside_the_city_are_dropped(live_google, monkeypatch):
     assert [p["name"] for p in places] == ["Test Bistro", "Somewhere"]
 
 
-def test_search_failure_returns_a_clear_502(client, auth_headers, monkeypatch):
+def test_search_failure_returns_a_clear_503(client, auth_headers, monkeypatch):
     async def failing_search(query, city):
         raise PlacesError("quota exceeded")
 
     monkeypatch.setattr(places_service, "search_places", failing_search)
     resp = client.get("/api/v1/hotspots/recommend?query=cafes&city=london", headers=auth_headers)
-    assert resp.status_code == 502
+    assert resp.status_code == 503
+    assert resp.json()["code"] == "places_unavailable" and resp.json()["retryable"] is True
     assert "quota" not in resp.json()["detail"]  # internals stay on the server
 
 

@@ -161,6 +161,9 @@ function PlanningProvider({ children }) {
   const [searchQuery, setSearchQuery] = useState('trendy cafes');
   const [places, setPlaces] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  // A failed search or Plan the user can retry: { message }, shown with a Retry button.
+  const [searchError, setSearchError] = useState(null);
+  const [planError, setPlanError] = useState(null);
   // Plan form and the unsaved Plan
   const [budget, setBudget] = useState('$$');
   const [duration, setDuration] = useState(1);
@@ -190,10 +193,12 @@ function PlanningProvider({ children }) {
   const search = useCallback(async () => {
     if (!searchQuery.trim()) return;
     setSearchLoading(true);
+    setSearchError(null);
     try {
       setPlaces(await api(`/hotspots/recommend?query=${encodeURIComponent(searchQuery.trim())}&city=${city}`));
     } catch (err) {
-      reportError(err, "Couldn't load places. Please try again.");
+      if (err.retryable) setSearchError({ message: err.message || "Couldn't load places. Please try again." });
+      else reportError(err, "Couldn't load places. Please try again.");
     } finally {
       setSearchLoading(false);
     }
@@ -202,6 +207,7 @@ function PlanningProvider({ children }) {
   const generate = useCallback(async () => {
     setGenerating(true);
     setPreviewItinerary(null);
+    setPlanError(null);
     window.scrollTo({ top: 0 });
     try {
       /** @type {import('../lib/api').GeneratedPlan} */
@@ -211,7 +217,8 @@ function PlanningProvider({ children }) {
       });
       setPreviewItinerary(itinerary);
     } catch (err) {
-      reportError(err, "Couldn't plan that day. Please try again.");
+      if (err.retryable) setPlanError({ message: err.message || "Couldn't plan that day. Please try again." });
+      else reportError(err, "Couldn't plan that day. Please try again.");
     } finally {
       setGenerating(false);
     }
@@ -263,13 +270,13 @@ function PlanningProvider({ children }) {
 
   const value = useMemo(() => ({
     city, changeCity,
-    searchQuery, setSearchQuery, places, searchLoading, search,
+    searchQuery, setSearchQuery, places, searchLoading, search, searchError,
     budget, setBudget, duration, setDuration, preferences, setPreferences,
     previewItinerary, clearPreview: () => setPreviewItinerary(null),
-    generating, generate, addStop, savingTrip, savePlan,
+    generating, generate, addStop, savingTrip, savePlan, planError,
   }), [
-    city, changeCity, searchQuery, places, searchLoading, search, budget, duration, preferences,
-    previewItinerary, generating, generate, addStop, savingTrip, savePlan,
+    city, changeCity, searchQuery, places, searchLoading, search, searchError, budget, duration, preferences,
+    previewItinerary, generating, generate, addStop, savingTrip, savePlan, planError,
   ]);
   return <PlanningContext.Provider value={value}>{children}</PlanningContext.Provider>;
 }

@@ -42,6 +42,8 @@ class _FakeOpenAI:
 
 @pytest.fixture
 def mock_itinerary_backends(monkeypatch):
+    # A real-looking Google key: with keys set the planner never uses Demo data.
+    monkeypatch.setattr(itinerary_module.places_service, "api_key", "test-key")
     async def fake_search_places_for_slot(city, category, budget, max_results=5):
         return [CANDIDATE]
 
@@ -137,6 +139,7 @@ def test_validate_and_enrich_marks_verified_and_unverified():
 
 
 def test_cross_day_candidates_do_not_repeat(monkeypatch):
+    monkeypatch.setattr(itinerary_module.places_service, "api_key", "test-key")
     """Places featured on day 1 must be excluded from day 2's candidate lists."""
     # Large enough that day 1's slots (with within-day de-dup) don't exhaust it
     # and day 2 still has fresh candidates to draw from.
