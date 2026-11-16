@@ -250,6 +250,7 @@ export default function App() {
     window.scrollTo({ top: 0 });
 
     try {
+      /** @type {import('./lib/api').GeneratedPlan} */
       const itinerary = await api('/itineraries/generate', {
         method: 'POST',
         body: {
@@ -297,6 +298,7 @@ export default function App() {
     if (!previewItinerary || savingTrip) return;
     setSavingTrip(true);
     try {
+      /** @type {import('./lib/api').SavedPlan} */
       const saved = await api('/itineraries/', { method: 'POST', body: previewItinerary });
       setSavedItineraries(prev => [saved, ...prev]);
       setPreviewItinerary(null);

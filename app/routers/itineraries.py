@@ -1,17 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
-from typing import List, Any
+from typing import List
 from app.core.database import get_db
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.models.user import User
 from app.models.itinerary import Itinerary
-from app.schemas.itinerary import ItineraryCreate, ItineraryResponse, ItineraryGenerate
+from app.schemas.itinerary import GeneratedItinerary, ItineraryCreate, ItineraryResponse, ItineraryGenerate
 from app.services.itinerary import itinerary_service
 
 router = APIRouter(prefix="/itineraries", tags=["itineraries"])
 
-@router.post("/generate", response_model=Any)
+@router.post("/generate", response_model=GeneratedItinerary)
 @limiter.limit("5/minute")
 async def generate_itinerary(
     request: Request,
@@ -53,7 +53,7 @@ def save_itinerary(
         duration_days=itinerary_in.duration_days,
         city=itinerary_in.city,
         currency=itinerary_in.currency,
-        items=itinerary_in.items
+        items=[stop.model_dump() for stop in itinerary_in.items]
     )
     db.add(itinerary)
     db.commit()

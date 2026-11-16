@@ -1,24 +1,85 @@
-from pydantic import BaseModel, Field
-from typing import Literal, Optional, List, Dict, Any
 from datetime import datetime
+from typing import Any, List, Literal, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.core.cities import CitySlug
 
 Budget = Literal["$", "$$", "$$$"]
 
+
+class Stop(BaseModel):
+    """One entry in a Plan's items: a place or activity at a time on a day."""
+
+    # Keys the app doesn't know (e.g. sent by an older web build) are dropped.
+    model_config = ConfigDict(extra="ignore")
+
+    day: int = Field(1, ge=1, description="Day of the Plan, from 1")
+    time: Optional[str] = Field(None, max_length=20, description="Start time as shown, e.g. '09:00 AM'")
+    activity: str = Field(..., max_length=200)
+    description: Optional[str] = Field(None, max_length=2000)
+    estimated_cost: int = Field(0, ge=0, description="Whole amount in the Plan's currency")
+    location: Optional[str] = Field(None, max_length=300)
+    address: Optional[str] = Field(None, max_length=500)
+    google_place_id: Optional[str] = Field(None, max_length=300)
+    verified: bool = Field(False, description="True when the place was matched to a real candidate")
+    category: Optional[str] = Field(None, max_length=100)
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    price_level: Optional[int] = Field(None, ge=0, le=4)
+
+
+class SavedStop(Stop):
+    """
+    A Stop read back from a saved Plan. Plans saved before Stops were typed can
+    hold other keys and fractional costs; they still load.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    activity: str = ""
+    estimated_cost: int = 0
+
+    @field_validator("estimated_cost", mode="before")
+    @classmethod
+    def _whole_cost(cls, value: Any) -> int:
+        try:
+            return max(0, round(float(value)))
+        except (TypeError, ValueError):
+            return 0
+
+    @field_validator("price_level", mode="before")
+    @classmethod
+    def _known_price_level(cls, value: Any) -> Optional[int]:
+        return value if isinstance(value, int) and 0 <= value <= 4 else None
+
+
 class ItineraryBase(BaseModel):
     title: str = Field(..., max_length=200)
     destination: str = Field(..., max_length=100)
-    budget: str
-    duration_days: int = 1
-    items: List[Dict[str, Any]] # Timeline of planned activities/places
+    duration_days: int = Field(1, ge=1, le=7)
     city: Optional[str] = None  # slug of a supported city, when planned for one
     currency: Optional[str] = None  # ISO 4217 code that estimated costs are in
 
+
 class ItineraryCreate(ItineraryBase):
-    pass
+    budget: Budget
+    items: List[Stop]
+
+
+class GeneratedItinerary(ItineraryBase):
+    """A Plan from /itineraries/generate: not saved yet."""
+
+    budget: Budget
+    items: List[Stop]
+    demo: bool = Field(False, description="True when built from Demo data")
+
 
 class ItineraryResponse(ItineraryBase):
+    # Read side: saved Plans keep whatever they were saved with.
+    budget: str
+    duration_days: int = 1
+    items: List[SavedStop]
     id: int
     user_id: int
     created_at: datetime
