@@ -1,0 +1,68 @@
+# Areas in Johannesburg: neighbourhoods a Plan can stay inside (GLOSSARY: Area).
+# Loaded by app/services/areas.py; served at GET /api/v1/cities/johannesburg/areas.
+#
+# centre        from OpenStreetMap (Nominatim), 16 Nov 2026
+# radius_m      roughly how far the Area reaches from its centre
+# walk_friendly fine to walk between nearby Stops by day; feeds transport legs (#97)
+# night_safe    fine to walk between Stops after dark; feeds the validator (#99).
+#               false whenever we're not sure: a night leg is e-hailing then.
+# reviewed      true once a local (Cameron, for Cape Town) has checked the Area
+# aliases       other names people use for it in chat
+#
+# DRAFT: written from public knowledge, not yet checked by a local.
+
+areas:
+  - slug: maboneng
+    name: "Maboneng"
+    centre: {lat: -26.2036, lng: 28.06}
+    radius_m: 600
+    walk_friendly: true
+    night_safe: false
+    aliases: ["Maboneng Precinct", "Arts on Main"]
+    notes: "Arts precinct with galleries and Sunday markets; e-hail in and out."
+    reviewed: false
+  - slug: braamfontein
+    name: "Braamfontein"
+    centre: {lat: -26.1923, lng: 28.0361}
+    radius_m: 900
+    walk_friendly: true
+    night_safe: false
+    aliases: ["Braam", "Neighbourgoods Braamfontein"]
+    notes: "Student and arts district; Saturday market and rooftop bars."
+    reviewed: false
+  - slug: melville
+    name: "Melville"
+    centre: {lat: -26.1752, lng: 28.0064}
+    radius_m: 800
+    walk_friendly: true
+    night_safe: false
+    aliases: ["7th Street", "Melville Koppies"]
+    notes: "7th Street bars and cafes; lively at night, e-hail home."
+    reviewed: false
+  - slug: rosebank
+    name: "Rosebank"
+    centre: {lat: -26.1429, lng: 28.0397}
+    radius_m: 1000
+    walk_friendly: true
+    night_safe: false
+    aliases: ["Keyes Art Mile", "Rosebank Mall"]
+    notes: "Galleries on Keyes Art Mile, the Sunday rooftop market and malls."
+    reviewed: false
+  - slug: sandton
+    name: "Sandton"
+    centre: {lat: -26.1046, lng: 28.0545}
+    radius_m: 1500
+    walk_friendly: false
+    night_safe: false
+    aliases: ["Sandton City", "Nelson Mandela Square"]
+    notes: "Business district: malls, hotels and upmarket dining."
+    reviewed: false
+  - slug: soweto
+    name: "Soweto (Vilakazi Street)"
+    centre: {lat: -26.2379, lng: 27.904}
+    radius_m: 1200
+    walk_friendly: true
+    night_safe: false
+    aliases: ["Vilakazi Street", "Orlando West"]
+    notes: "Mandela House and Hector Pieterson Memorial; go with a local guide or by day."
+    reviewed: false

@@ -1,0 +1,50 @@
+# Areas in London: neighbourhoods a Plan can stay inside (GLOSSARY: Area).
+# Loaded by app/services/areas.py; served at GET /api/v1/cities/london/areas.
+#
+# centre        from OpenStreetMap (Nominatim), 16 Nov 2026
+# radius_m      roughly how far the Area reaches from its centre
+# walk_friendly fine to walk between nearby Stops by day; feeds transport legs (#97)
+# night_safe    fine to walk between Stops after dark; feeds the validator (#99).
+#               false whenever we're not sure: a night leg is e-hailing then.
+# reviewed      true once a local (Cameron, for Cape Town) has checked the Area
+# aliases       other names people use for it in chat
+#
+# DRAFT: written from public knowledge, not yet checked by a local.
+
+areas:
+  - slug: shoreditch
+    name: "Shoreditch"
+    centre: {lat: 51.5267, lng: -0.0799}
+    radius_m: 900
+    walk_friendly: true
+    night_safe: true
+    aliases: ["Brick Lane", "Old Street"]
+    notes: "Street art, markets and bars."
+    reviewed: false
+  - slug: soho
+    name: "Soho"
+    centre: {lat: 51.5141, lng: -0.135}
+    radius_m: 600
+    walk_friendly: true
+    night_safe: true
+    aliases: ["West End", "Carnaby Street"]
+    notes: "Theatres, restaurants and late bars."
+    reviewed: false
+  - slug: south-bank
+    name: "South Bank"
+    centre: {lat: 51.5065, lng: -0.1134}
+    radius_m: 1200
+    walk_friendly: true
+    night_safe: true
+    aliases: ["Southbank", "Waterloo", "Borough Market"]
+    notes: "Riverside walk, galleries and Borough Market."
+    reviewed: false
+  - slug: camden
+    name: "Camden Town"
+    centre: {lat: 51.5393, lng: -0.1428}
+    radius_m: 800
+    walk_friendly: true
+    night_safe: true
+    aliases: ["Camden", "Camden Market"]
+    notes: "Markets, live music and canal walks."
+    reviewed: false
