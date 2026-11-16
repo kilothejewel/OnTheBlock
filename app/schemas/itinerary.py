@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from app.core.cities import PlannableCity
 
 Budget = Literal["$", "$$", "$$$"]
+CostBasis = Literal["fee_table", "google_price_range", "google_price_level", "category_band", "default", "beta_estimate", "unknown"]
 
 
 class Stop(BaseModel):
@@ -27,6 +28,12 @@ class Stop(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     price_level: Optional[int] = Field(None, ge=0, le=4)
+    cost_min: Optional[int] = Field(None, ge=0, description="Per person, whole units of the Plan's currency; null when unknown")
+    cost_max: Optional[int] = Field(None, ge=0)
+    cost_basis: Optional[CostBasis] = Field(
+        None,
+        description="Where the range came from (#96). beta_estimate: a rough estimate; unknown: price not confirmed",
+    )
 
 
 class SavedStop(Stop):
@@ -52,6 +59,11 @@ class SavedStop(Stop):
     @classmethod
     def _known_price_level(cls, value: Any) -> Optional[int]:
         return value if isinstance(value, int) and 0 <= value <= 4 else None
+
+    @field_validator("cost_basis", mode="before")
+    @classmethod
+    def _known_basis(cls, value: Any) -> Optional[str]:
+        return value if value in CostBasis.__args__ else None
 
 
 class ItineraryBase(BaseModel):

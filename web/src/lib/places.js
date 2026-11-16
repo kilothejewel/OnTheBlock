@@ -75,7 +75,19 @@ export function priceLevelLabel(level) {
   return level ? '$'.repeat(level) : null;
 }
 
+// A Stop's per-person cost (#96): "R120–R220", "Up to R120", "R480", "Free",
+// with "rough estimate" for beta cities and "Price not confirmed" when unknown.
+// Older Plans have only estimated_cost.
 export function costLabel(item, currency) {
+  if (item.cost_basis === 'unknown') return 'Price not confirmed';
+  const { cost_min: low, cost_max: high } = item;
+  if (low != null && high != null) {
+    let range;
+    if (low === high) range = money(high, currency);
+    else if (Number(low) === 0) range = `Up to ${money(high, currency)}`;
+    else range = `${money(low, currency)}–${money(high, currency)}`;
+    return item.cost_basis === 'beta_estimate' ? `${range} (rough estimate)` : range;
+  }
   return money(item.estimated_cost, currency) || priceLevelLabel(item.price_level) || '—';
 }
 

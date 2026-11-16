@@ -881,6 +881,18 @@ export interface components {
             longitude?: number | null;
             /** Price Level */
             price_level?: number | null;
+            /**
+             * Cost Min
+             * @description Per person, whole units of the Plan's currency; null when unknown
+             */
+            cost_min?: number | null;
+            /** Cost Max */
+            cost_max?: number | null;
+            /**
+             * Cost Basis
+             * @description Where the range came from (#96). beta_estimate: a rough estimate; unknown: price not confirmed
+             */
+            cost_basis?: ("fee_table" | "google_price_range" | "google_price_level" | "category_band" | "default" | "beta_estimate" | "unknown") | null;
         } & {
             [key: string]: unknown;
         };
@@ -930,6 +942,18 @@ export interface components {
             longitude?: number | null;
             /** Price Level */
             price_level?: number | null;
+            /**
+             * Cost Min
+             * @description Per person, whole units of the Plan's currency; null when unknown
+             */
+            cost_min?: number | null;
+            /** Cost Max */
+            cost_max?: number | null;
+            /**
+             * Cost Basis
+             * @description Where the range came from (#96). beta_estimate: a rough estimate; unknown: price not confirmed
+             */
+            cost_basis?: ("fee_table" | "google_price_range" | "google_price_level" | "category_band" | "default" | "beta_estimate" | "unknown") | null;
         };
         /** Token */
         Token: {
