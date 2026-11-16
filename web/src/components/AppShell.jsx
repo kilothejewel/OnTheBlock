@@ -112,12 +112,32 @@ export function BottomNav({ activeTab, onNavigate, savedCount }) {
   );
 }
 
+// The data and guides the app uses (app/data/sources.yaml, ADR 0007).
+// tests/test_sources.py checks every source's credit is here.
+const DATA_CREDITS = [
+  { name: 'Overture Maps Foundation', url: 'https://overturemaps.org/' },
+  { name: 'Foursquare', url: 'https://opensource.foursquare.com/os-places/' },
+  { name: 'Wikivoyage', url: 'https://en.wikivoyage.org/' },
+  { name: 'Wikipedia', url: 'https://en.wikipedia.org/' },
+  { name: 'Open-Meteo', url: 'https://open-meteo.com/' },
+  { name: 'Google', url: 'https://www.google.com/maps' },
+];
+
 export function Footer() {
   return (
     <footer className="footer">
       <div className="footer__inner">
         <Logo className="footer__logo" />
         <span>Plan your day on a budget · © {new Date().getFullYear()}</span>
+        <p className="footer__credits">
+          Data and guides:{' '}
+          {DATA_CREDITS.map((credit, index) => (
+            <span key={credit.name}>
+              <a href={credit.url} target="_blank" rel="noopener noreferrer">{credit.name}</a>
+              {index < DATA_CREDITS.length - 1 ? ', ' : ''}
+            </span>
+          ))}
+        </p>
       </div>
     </footer>
   );

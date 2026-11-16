@@ -1,0 +1,85 @@
+# Every outside data source the app uses, with its licence and the release we
+# pin. ADR 0007 (docs/adr/0007-data-sources-and-licences.md) explains the
+# choices. The monthly refresh job (#112) bumps `release` when it moves to a
+# newer one. `credit` is the name shown in the web footer's "Data and guides" line.
+
+sources:
+  - key: overture_places
+    name: Overture Maps places
+    use: Places catalogue (#119)
+    credit: Overture Maps Foundation
+    url: https://docs.overturemaps.org/guides/places/
+    licence: CDLA Permissive 2.0 (some rows Apache 2.0, from Foursquare)
+    licence_url: https://docs.overturemaps.org/attribution/
+    release: "2026-10-21.0"
+    we_store: The rows we use, with their Overture ids
+
+  - key: overture_taxonomy
+    name: Overture Maps places taxonomy
+    use: Interest to catalogue category mapping (app/data/taxonomy, #86)
+    credit: Overture Maps Foundation
+    url: https://github.com/OvertureMaps/web-tools/tree/main/tools/taxonomy-explorer/public/taxonomy
+    licence: CC BY 4.0
+    licence_url: https://creativecommons.org/licenses/by/4.0/
+    release: "2026-10-21.0"
+    we_store: The category list
+
+  - key: foursquare_os_places
+    name: Foursquare OS Places
+    use: Places catalogue (#119) and category ids (#86)
+    credit: Foursquare
+    url: https://docs.foursquare.com/data-products/docs/access-fsq-os-places
+    licence: Apache 2.0
+    licence_url: https://www.apache.org/licenses/LICENSE-2.0
+    release: "2026-10-15"
+    we_store: The rows we use, with their Foursquare ids
+
+  - key: wikivoyage
+    name: Wikivoyage
+    use: Guide text (#122)
+    credit: Wikivoyage
+    url: https://en.wikivoyage.org/
+    licence: CC BY-SA 4.0
+    licence_url: https://en.wikivoyage.org/wiki/Wikivoyage:Copyleft
+    release: per-chunk page revision
+    we_store: Text chunks with page URL, revision and licence
+
+  - key: wikipedia
+    name: Wikipedia
+    use: Guide text (#122)
+    credit: Wikipedia
+    url: https://en.wikipedia.org/
+    licence: CC BY-SA 4.0
+    licence_url: https://foundation.wikimedia.org/wiki/Policy:Terms_of_Use
+    release: per-chunk page revision
+    we_store: Text chunks with page URL, revision and licence
+
+  - key: curated
+    name: On the Block curated notes and trending list
+    use: Local picks (#122, #124)
+    credit: On the Block
+    url: https://github.com/kilothejewel/OnTheBlock
+    licence: Ours (MIT, with the repository)
+    licence_url: https://github.com/kilothejewel/OnTheBlock/blob/main/LICENSE
+    release: the repository
+    we_store: Everything
+
+  - key: google_places
+    name: Google Places API (New)
+    use: Google place ID matching (#120) and the live check of final Stops (#93)
+    credit: Google
+    url: https://developers.google.com/maps/documentation/places/web-service
+    licence: Google Maps Platform Terms of Service
+    licence_url: https://cloud.google.com/maps-platform/terms
+    release: Places API (New) v1
+    we_store: Place IDs only; live fields are never stored (ADR 0002)
+
+  - key: open_meteo
+    name: Open-Meteo
+    use: Weather and sunset for outdoor Slots (#114)
+    credit: Open-Meteo
+    url: https://open-meteo.com/
+    licence: CC BY 4.0 (free API for non-commercial use, under 10,000 calls a day)
+    licence_url: https://open-meteo.com/en/licence
+    release: Forecast API v1
+    we_store: Nothing beyond a short cache
