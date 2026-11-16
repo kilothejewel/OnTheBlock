@@ -1,16 +1,19 @@
 import { Heart, MapPin, Navigation, Star } from 'lucide-react';
+import GoogleAttribution from './GoogleAttribution';
 import PlacePhoto from './PlacePhoto';
-import { mapsUrl, placeCategory, priceLevelLabel, prettyType } from '../lib/places';
+import { isGooglePlace, mapsUrl, placeCategory, priceLevelLabel, prettyType } from '../lib/places';
 
 export default function PlaceCard({ place, isSaved, onToggleSave }) {
   const category = placeCategory(place);
   const types = (place.types || '').split(',').map((t) => t.trim()).filter(Boolean).slice(0, 3);
   const price = priceLevelLabel(place.price_level);
+  const fromGoogle = isGooglePlace(place.google_place_id);
 
   return (
     <article className="card place-card hover-zoom">
       <PlacePhoto category={category} seed={place.google_place_id || place.name} src={place.photo_url} placeId={place.google_place_id}>
         {price ? <span className="badge">{price}</span> : <span />}
+        {!fromGoogle && <span className="badge badge--demo">Demo</span>}
       </PlacePhoto>
 
       <div className="place-card__body">
@@ -35,6 +38,7 @@ export default function PlaceCard({ place, isSaved, onToggleSave }) {
           )}
           {types.map((t) => <span key={t} className="tag">{prettyType(t)}</span>)}
         </div>
+        {fromGoogle && <GoogleAttribution className="place-card__attribution" />}
         <div className="place-card__footer">
           <a
             className="btn btn--outline"

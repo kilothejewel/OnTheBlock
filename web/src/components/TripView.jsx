@@ -3,10 +3,11 @@ import {
   ArrowLeft, BadgeCheck, CalendarDays, Check, ChevronDown, ChevronUp, Heart, Info, LoaderCircle,
   MapPin, Navigation, Pencil, Plus, RefreshCw, Trash2, X,
 } from 'lucide-react';
+import GoogleAttribution from './GoogleAttribution';
 import PlacePhoto from './PlacePhoto';
 import { CATEGORY_ICONS } from '../lib/categoryIcons';
 import {
-  BUDGET_LABELS, PERIODS, buildDays, cleanLocation, costLabel, isDemoPlaceId, mapsUrl, money, placeCategory, stopCategory,
+  BUDGET_LABELS, PERIODS, buildDays, cleanLocation, costLabel, isDemoPlaceId, isGooglePlace, mapsUrl, money, placeCategory, stopCategory,
 } from '../lib/places';
 
 /* ------------------------------------------------------------------ */
@@ -51,6 +52,8 @@ function StopCard({ item, open, onToggle, currency }) {
         {open && item.description && (
           <p id={detailsId} className="stop__desc">{item.description}</p>
         )}
+
+        {isGooglePlace(item.google_place_id) && <GoogleAttribution className="stop__attribution" />}
 
         <div className="stop__actions">
           {item.description && (
@@ -140,6 +143,7 @@ function AddStopSheet({ day, places, initialPlaceId, onAdd, onClose }) {
                 </button>
               ))}
             </div>
+            {places.some((p) => isGooglePlace(p.google_place_id)) && <GoogleAttribution className="sheet__attribution" />}
           </div>
         </div>
 
@@ -375,6 +379,7 @@ export default function TripView({
                 </div>
               ))}
             </div>
+            {savedHotspots.slice(0, 5).some((p) => isGooglePlace(p.google_place_id)) && <GoogleAttribution className="saved-list__attribution" />}
           </section>
         )}
       </aside>

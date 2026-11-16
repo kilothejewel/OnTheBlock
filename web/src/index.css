@@ -496,6 +496,23 @@ a.sr-only:focus {
 .footer__credits a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .footer__credits a:hover { color: var(--text); }
 
+/* Google Maps attribution: Google's text-attribution rules, kept exactly
+   (see GoogleAttribution.jsx). #5E5E5E on white is 6.4:1. */
+.gmp-attribution {
+  display: inline-block;
+  font-family: Roboto, var(--font);
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: normal;
+  white-space: nowrap;
+  color: #5e5e5e;
+}
+.place-card__attribution, .stop__attribution { align-self: flex-end; margin-top: 8px; }
+.sheet__attribution, .saved-list__attribution { display: block; margin-top: 10px; text-align: right; }
+.badge--demo { margin-left: auto; }
+
 /* Toast */
 .toast {
   position: fixed; z-index: 60;
