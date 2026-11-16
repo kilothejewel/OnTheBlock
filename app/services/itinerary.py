@@ -1,16 +1,13 @@
 import asyncio
 import json
-import re
 from typing import Dict, Any, List
 from openai import AsyncOpenAI
 from app.core.cities import City, get_city
 from app.core.config import settings
 from app.schemas.itinerary import ItineraryGenerate
 from app.services.demo_places import demo_slot
+from app.services.interests import wants_slot
 from app.services.places import places_service
-
-# Whole words only, so "barbecue" doesn't count as a request for bars.
-NIGHTLIFE_RE = re.compile(r"\b(nightlife|bars?|clubs?|clubbing|party|drinks|cocktails?|dancing)\b")
 
 # Demo itinerary: per-person costs in USD by slot and budget, converted to the
 # city's currency with its approximate rate.
@@ -32,10 +29,6 @@ DEMO_COPY = {
 }
 # Round demo costs to amounts people would actually quote in each currency.
 COST_STEPS = {"JPY": 100, "ZAR": 10}
-
-
-def wants_nightlife(preferences: str) -> bool:
-    return bool(NIGHTLIFE_RE.search((preferences or "").lower()))
 
 
 def local_cost(usd: float, city: City) -> int:
@@ -63,7 +56,7 @@ class ItineraryService:
             return self._get_demo_itinerary(params, city)
 
         categories = ["breakfast", "lunch", "dinner"]
-        if wants_nightlife(params.preferences):
+        if wants_slot(params.preferences, "nightlife"):
             categories.append("nightlife")
 
         # Fetch candidate places for each day and slot.
@@ -264,7 +257,7 @@ class ItineraryService:
         print(f"Using demo data for an itinerary in {city.name}...")
 
         schedule = list(DEMO_DAY)
-        if wants_nightlife(params.preferences):
+        if wants_slot(params.preferences, "nightlife"):
             schedule.append(DEMO_NIGHT)
 
         # Rotate through each slot's places so lunch and dinner (and later

@@ -26,6 +26,10 @@ _Avoid_: District, zone, region
 Optional free-text taste a user gives a Plan, such as "art, vegan, rooftop". It shapes which Places are picked, never the Mode.
 _Avoid_: Preferences, tags
 
+**Interest**:
+One of a fixed set of things people plan around, such as nature, clubbing or wine, matched from what they say ("a jol", "wine farms") and listed in `app/data/interests.yaml`. Each maps to Google types and catalogue categories.
+_Avoid_: Category, tag, activity type
+
 **Date**:
 The calendar day a Plan is for. Opening hours are checked against it.
 
