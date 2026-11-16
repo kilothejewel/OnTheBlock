@@ -59,6 +59,24 @@ Only needed if you're working on the live Google Places or LLM paths. Use **your
 
 Without the Gemini and Groq keys the chat planner uses its rules client, which needs no model (`app/services/llm.py`). Free-tier providers may read prompts, so never put real personal details in test chats. Before adding a Google key, set a daily quota on the Places API and a budget alert in Google Cloud.
 
+## Free-tier limits
+
+v2 runs on free tiers only. The code stops first (the quota guard, `app/services/quota.py`); these provider-side limits are the backstop so nothing can bill. Places API quotas are **per method, not per SKU**, so the Google calls are split across three Cloud projects on one billing account, each with one key restricted to Places API (New).
+
+| Provider | Project / key | Limit set at the provider | Why |
+| --- | --- | --- | --- |
+| Google Places | `otb-live` · `OTB_GOOGLE_LIVE_KEY` | Place Details **30/day**, nothing else | Live check of final Stops (#93): about 930 Enterprise calls a month, under the 1,000 free |
+| Google Places | `otb-display` · `OTB_GOOGLE_DISPLAY_KEY` | Place Details **160/day**, Place Photos **30/day**, Text Search **30/day** | Display details (#29), photos, Discover search until #128 |
+| Google Places | `otb-matching` · GitHub Actions secret only | Text Search **1,000/day** | The IDs-only matching job (#120), field mask `places.id` |
+| Google Cloud billing | the billing account | Budget alert at **USD 1**; budget → Pub/Sub → function that disables billing | Places stops ("not confirmed") instead of charging |
+| Gemini | AI Studio key on a project with **no billing account** | Free tier only | Intake and compose (#90) |
+| Groq | Free plan, **no card** | Free plan only | Second LLM provider (#90) |
+| OpenAI | none | Key deleted | v1 planner, being retired (#118) |
+
+Don't raise any Text Search quota above 30/day until #127 has merged. Without the split keys (local dev), the API uses `OTB_GOOGLE_PLACES_API_KEY` for everything.
+
+> TODO(cameron): confirm once set. Each row is the target; tick it off in #44 once the console matches.
+
 ## Tests and checks
 
 CI runs all of these on every pull request, and a PR can't merge until they pass.

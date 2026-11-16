@@ -43,6 +43,12 @@ class Settings(BaseSettings):
 
     #Google Places Settings (optional: without a key, places use demo data)
     GOOGLE_PLACES_API_KEY: Optional[str] = None
+    # One key per Google Cloud project (#44), so each project's console quota
+    # is a real backstop: Places quotas are per method, not per SKU. Unset
+    # (local dev), both fall back to GOOGLE_PLACES_API_KEY. The matching job's
+    # key (#120) is a GitHub Actions secret and never on the API host.
+    GOOGLE_LIVE_KEY: Optional[str] = None  # otb-live: Place Details 30/day, live checks (#93)
+    GOOGLE_DISPLAY_KEY: Optional[str] = None  # otb-display: details (#29), photos, Discover search
 
     #LLM providers (app/services/llm.py, ADR 0006): free tiers only.
     # Tried in order; "rules" needs no model and never fails, so it's always last.
