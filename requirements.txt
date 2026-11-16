@@ -1,12 +1,12 @@
 # Pinned to the versions the test suite runs against, so a deploy installs
 # exactly what was tested.
-fastapi==0.162.0
+fastapi==0.162.5
 uvicorn[standard]==0.54.0
-sqlalchemy==2.1.6
+sqlalchemy==2.1.8
 alembic==1.20.1
 python-dotenv==1.2.4
-openai==3.41.0
-pydantic==2.14.1
+openai==3.50.0
+pydantic==2.14.3
 pydantic-settings==2.16.2
 email-validator==2.3.0
 psycopg2-binary==2.9.13
@@ -17,4 +17,4 @@ httpx==0.28.1
 
 # --- Dev / test only (not needed to run the API in production) ---
 pytest==9.2.0
-pytest-asyncio==1.4.1
+pytest-asyncio==1.5.0
