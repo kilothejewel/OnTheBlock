@@ -1,0 +1,305 @@
+# Interests: what people say they want, mapped to the categories each
+# data source uses. Loaded by app/services/interests.py.
+#
+# synonyms          whole words or phrases matched in a chat message (match_interests)
+# included_types    Google Places API (New) Table A types: Google ID matching (#120) and the live check
+# text_queries      Text Search queries for this Interest
+# overture_categories  Overture Maps places taxonomy `primary` values: the catalogue (#119)
+# fsq_category_ids  Foursquare OS Places category ids (name in the comment): the catalogue (#119)
+# description       one sentence; its embedding is the Interest's query vector (#123)
+# time_of_day       morning (to 12:00), afternoon (12:00-17:00), evening (17:00-21:30), late_night (from 21:30)
+# outdoor           needs daylight and dry weather: never after sunset minus 60 minutes
+# typical_minutes   how long a visit usually takes
+# slot_kinds        which Slots of the skeleton (#92) it can fill
+# min_reviews       (optional) fewest reviews a candidate needs; default in scoring (#94)
+#
+# Every type, category and id is checked against the lists in app/data/taxonomy/
+# (see that folder's README for their sources and versions) by tests/test_interests.py.
+
+interests:
+  nature:
+    description: "Green open spaces: parks, gardens, nature reserves, forests and scenic viewpoints."
+    synonyms: ["nature", "outdoors", "outdoor", "garden", "park", "scenic", "views", "view", "fynbos", "forest", "mountain", "fresh air"]
+    included_types: ["park", "national_park", "state_park", "botanical_garden", "garden", "nature_preserve", "scenic_spot", "mountain_peak", "wildlife_park"]
+    text_queries: ["nature reserve", "botanical garden", "scenic viewpoint"]
+    overture_categories: ["park", "national_park", "state_park", "botanical_garden", "garden", "nature_reserve", "forest", "mountain", "scenic_viewpoint", "lookout"]
+    fsq_category_ids:
+      - "4bf58dd8d48988d163941735"  # Landmarks and Outdoors > Park
+      - "52e81612bcbc57f1066b7a21"  # Landmarks and Outdoors > Park > National Park
+      - "5bae9231bedf3950379f89d0"  # Landmarks and Outdoors > Park > State or Provincial Park
+      - "63be6904847c3692a84b9be1"  # Landmarks and Outdoors > Park > Urban Park
+      - "52e81612bcbc57f1066b7a22"  # Landmarks and Outdoors > Botanical Garden
+      - "4bf58dd8d48988d15a941735"  # Landmarks and Outdoors > Garden
+      - "52e81612bcbc57f1066b7a13"  # Landmarks and Outdoors > Nature Preserve
+      - "52e81612bcbc57f1066b7a23"  # Landmarks and Outdoors > Forest
+      - "4eb1d4d54b900d56c88a45fc"  # Landmarks and Outdoors > Mountain
+      - "4bf58dd8d48988d165941735"  # Landmarks and Outdoors > Scenic Lookout
+    time_of_day: ["morning", "afternoon"]
+    outdoor: true
+    typical_minutes: 120
+    slot_kinds: ["activity"]
+  hiking:
+    description: "Walking and hiking trails, from easy paths to mountain climbs like Lion's Head."
+    synonyms: ["hike", "hiking", "trail", "trails", "trek", "walk", "walking", "climb", "lion's head", "table mountain"]
+    included_types: ["hiking_area", "national_park", "nature_preserve", "mountain_peak"]
+    text_queries: ["hiking trail", "mountain hike"]
+    overture_categories: ["hiking_trail", "recreational_trail_or_path", "mountain", "nature_reserve"]
+    fsq_category_ids:
+      - "4bf58dd8d48988d159941735"  # Landmarks and Outdoors > Hiking Trail
+      - "69d41dd556ec6a4ded8e825a"  # Landmarks and Outdoors > Nature Trail
+      - "4eb1d4d54b900d56c88a45fc"  # Landmarks and Outdoors > Mountain
+    time_of_day: ["morning", "afternoon"]
+    outdoor: true
+    typical_minutes: 180
+    slot_kinds: ["activity"]
+  beach:
+    description: "Beaches and the seaside: swimming, sunbathing and walks along the shore."
+    synonyms: ["beach", "seaside", "ocean", "swim", "swimming", "sand", "coast", "tidal pool"]
+    included_types: ["beach"]
+    text_queries: ["beach", "tidal pool"]
+    overture_categories: ["beach"]
+    fsq_category_ids:
+      - "4bf58dd8d48988d1e2941735"  # Landmarks and Outdoors > Beach
+    time_of_day: ["morning", "afternoon"]
+    outdoor: true
+    typical_minutes: 150
+    slot_kinds: ["activity"]
+  wine:
+    description: "Wine estates, vineyards, cellar-door tastings and wine bars."
+    synonyms: ["wine", "wines", "winery", "wine farm", "wine estate", "vineyard", "wine tasting", "tasting", "winelands", "cellar"]
+    included_types: ["winery", "vineyard", "wine_bar"]
+    text_queries: ["wine tasting", "wine estate"]
+    overture_categories: ["winery", "wine_bar", "wine_tasting_room", "wine_tour"]
+    fsq_category_ids:
+      - "4bf58dd8d48988d14b941735"  # Dining and Drinking > Winery
+      - "4bf58dd8d48988d1de941735"  # Dining and Drinking > Vineyard
+      - "4bf58dd8d48988d123941735"  # Dining and Drinking > Bar > Wine Bar
+    time_of_day: ["afternoon", "evening"]
+    outdoor: false
+    typical_minutes: 120
+    slot_kinds: ["activity", "lunch"]
+  food:
+    description: "Places to eat: restaurants, braai and shisa nyama spots, seafood and local favourites."
+    synonyms: ["food", "foodie", "eat", "eating", "restaurant", "dinner", "lunch", "brunch", "braai", "shisa nyama", "bunny chow", "seafood", "steak", "cuisine", "dining"]
+    included_types: ["restaurant", "african_restaurant", "seafood_restaurant", "steak_house", "barbecue_restaurant", "fine_dining_restaurant", "brunch_restaurant", "indian_restaurant", "food_court"]
+    text_queries: ["restaurant", "shisa nyama"]
+    overture_categories: ["restaurant", "african_restaurant", "south_african_restaurant", "seafood_restaurant", "steakhouse", "barbecue_restaurant", "indian_restaurant", "casual_eatery", "food_court"]
+    fsq_category_ids:
+      - "4d4b7105d754a06374d81259"  # Dining and Drinking > Restaurant
+      - "4bf58dd8d48988d1c8941735"  # Dining and Drinking > Restaurant > African Restaurant
+      - "4bf58dd8d48988d1ce941735"  # Dining and Drinking > Restaurant > Seafood Restaurant
+      - "4bf58dd8d48988d1cc941735"  # Dining and Drinking > Restaurant > Steakhouse
+      - "4bf58dd8d48988d1df931735"  # Dining and Drinking > Restaurant > BBQ Joint
+      - "4bf58dd8d48988d10f941735"  # Dining and Drinking > Restaurant > Indian Restaurant
+      - "4bf58dd8d48988d120951735"  # Dining and Drinking > Food Court
+    time_of_day: ["morning", "afternoon", "evening"]
+    outdoor: false
+    typical_minutes: 90
+    slot_kinds: ["breakfast", "lunch", "dinner"]
+  coffee:
+    description: "Coffee shops, cafes, roasteries, tea rooms and bakeries."
+    synonyms: ["coffee", "cafe", "café", "cafes", "espresso", "latte", "flat white", "tea", "bakery", "pastries", "roastery"]
+    included_types: ["cafe", "coffee_shop", "coffee_roastery", "tea_house", "bakery"]
+    text_queries: ["specialty coffee", "coffee shop"]
+    overture_categories: ["cafe", "coffee_shop", "coffee_roastery", "tea_room", "bakery"]
+    fsq_category_ids:
+      - "4bf58dd8d48988d1e0931735"  # Dining and Drinking > Cafe, Coffee, and Tea House > Coffee Shop
+      - "63be6904847c3692a84b9bb6"  # Dining and Drinking > Cafe, Coffee, and Tea House
+      - "4bf58dd8d48988d1dc931735"  # Dining and Drinking > Cafe, Coffee, and Tea House > Tea Room
+      - "5e18993feee47d000759b256"  # Retail > Food and Beverage Retail > Coffee Roaster
+      - "4bf58dd8d48988d16a941735"  # Dining and Drinking > Bakery
+    time_of_day: ["morning", "afternoon"]
+    outdoor: false
+    typical_minutes: 60
+    slot_kinds: ["breakfast", "activity"]
+  markets:
+    description: "Food, craft, flea and night markets with stalls to browse and eat at."
+    synonyms: ["market", "markets", "flea market", "night market", "food market", "craft market", "stalls", "farmers market"]
+    included_types: ["market", "farmers_market", "flea_market"]
+    text_queries: ["food market", "craft market"]
+    overture_categories: ["market", "farmers_market", "flea_market", "public_market", "night_market", "holiday_market"]
+    fsq_category_ids:
+      - "50be8ee891d4fa8dcc7199a7"  # Retail > Market
+      - "4bf58dd8d48988d1fa941735"  # Retail > Food and Beverage Retail > Farmers Market
+      - "4bf58dd8d48988d1f7941735"  # Retail > Flea Market
+      - "53e510b7498ebcb1801b55d4"  # Dining and Drinking > Night Market
+      - "63be6904847c3692a84b9bb8"  # Event > Marketplace
+    time_of_day: ["morning", "afternoon"]
+    outdoor: true
+    typical_minutes: 90
+    slot_kinds: ["activity", "lunch"]
+  art:
+    description: "Art galleries, studios, street art and murals."
+    synonyms: ["art", "arts", "gallery", "galleries", "street art", "murals", "mural", "graffiti", "exhibition", "artist"]
+    included_types: ["art_gallery", "art_museum", "art_studio", "sculpture"]
+    text_queries: ["art gallery", "street art"]
+    overture_categories: ["art_gallery", "art_museum", "street_art", "artist_studio", "contemporary_art_museum", "modern_art_museum", "arts_and_crafts_space"]
+    fsq_category_ids:
+      - "4bf58dd8d48988d1e2931735"  # Arts and Entertainment > Art Gallery
+      - "4bf58dd8d48988d18f941735"  # Arts and Entertainment > Museum > Art Museum
+      - "52e81612bcbc57f1066b79ee"  # Arts and Entertainment > Public Art > Street Art
+      - "507c8c4091d498d9fc8c67a9"  # Arts and Entertainment > Public Art
+      - "58daa1558bbb0b01f18ec1d6"  # Business and Professional Services > Art Studio
+    time_of_day: ["morning", "afternoon"]
+    outdoor: false
+    typical_minutes: 90
+    slot_kinds: ["activity"]
+  history:
+    description: "Historic sites, monuments, memorials and heritage walks."
+    synonyms: ["history", "historic", "historical", "heritage", "monument", "monuments", "memorial", "castle", "fort", "apartheid", "struggle history"]
+    included_types: ["historical_landmark", "historical_place", "monument", "history_museum", "castle", "cultural_landmark"]
+    text_queries: ["historic site", "heritage walk"]
+    overture_categories: ["historic_site", "monument", "memorial_site", "castle", "fort", "history_museum", "historical_tour"]
+    fsq_category_ids:
+      - "4deefb944765f83613cdba6e"  # Landmarks and Outdoors > Historic and Protected Site
+      - "4bf58dd8d48988d12d941735"  # Landmarks and Outdoors > Monument
+      - "5642206c498e4bfca532186c"  # Landmarks and Outdoors > Memorial Site
+      - "50aaa49e4b90af0d42d5de11"  # Landmarks and Outdoors > Castle
+      - "69d41dd556ec6a4ded8e8264"  # Landmarks and Outdoors > Fort
+      - "4bf58dd8d48988d190941735"  # Arts and Entertainment > Museum > History Museum
+      - "69d41dd556ec6a4ded8e8268"  # Landmarks and Outdoors > Landmark Building
+    time_of_day: ["morning", "afternoon"]
+    outdoor: false
+    typical_minutes: 90
+    slot_kinds: ["activity"]
+  museums:
+    description: "Museums of art, history, science and culture."
+    synonyms: ["museum", "museums", "exhibit", "exhibits", "planetarium"]
+    included_types: ["museum", "art_museum", "history_museum", "planetarium"]
+    text_queries: ["museum"]
+    overture_categories: ["museum", "art_museum", "history_museum", "science_museum", "national_museum"]
+    fsq_category_ids:
+      - "4bf58dd8d48988d181941735"  # Arts and Entertainment > Museum
+      - "4bf58dd8d48988d18f941735"  # Arts and Entertainment > Museum > Art Museum
+      - "4bf58dd8d48988d190941735"  # Arts and Entertainment > Museum > History Museum
+      - "4bf58dd8d48988d191941735"  # Arts and Entertainment > Museum > Science Museum
+    time_of_day: ["morning", "afternoon"]
+    outdoor: false
+    typical_minutes: 120
+    slot_kinds: ["activity"]
+  live_music:
+    description: "Live music: gigs, jazz clubs, concert halls and music festivals."
+    synonyms: ["live music", "gig", "gigs", "concert", "concerts", "band", "bands", "jazz", "music"]
+    included_types: ["live_music_venue", "concert_hall"]
+    text_queries: ["live music", "jazz club"]
+    overture_categories: ["music_venue", "jazz_and_blues_venue", "music_festival_venue"]
+    fsq_category_ids:
+      - "4bf58dd8d48988d1e5931735"  # Arts and Entertainment > Performing Arts Venue > Music Venue
+      - "4bf58dd8d48988d1e7931735"  # Arts and Entertainment > Performing Arts Venue > Music Venue > Jazz and Blues Venue
+      - "5032792091d4c4b30a586d5c"  # Arts and Entertainment > Performing Arts Venue > Concert Hall
+      - "5267e4d9e4b0ec79466e48d1"  # Event > Entertainment Event > Music Festival
+    time_of_day: ["evening", "late_night"]
+    outdoor: false
+    typical_minutes: 150
+    slot_kinds: ["nightlife"]
+  clubbing:
+    description: "Night clubs and dance floors: amapiano, house and late-night parties."
+    synonyms: ["club", "clubbing", "night club", "nightclub", "dance", "dancing", "amapiano", "house music", "party", "rave", "jol"]
+    included_types: ["night_club", "dance_hall"]
+    text_queries: ["night club", "amapiano club"]
+    overture_categories: ["dance_club"]
+    fsq_category_ids:
+      - "4bf58dd8d48988d11f941735"  # Arts and Entertainment > Night Club
+      - "63be6904847c3692a84b9b23"  # Arts and Entertainment > Dance Hall
+    time_of_day: ["late_night"]
+    outdoor: false
+    typical_minutes: 180
+    slot_kinds: ["nightlife"]
+    min_reviews: 15
+  bars:
+    description: "Bars, pubs, cocktail lounges and craft breweries for a drink out."
+    synonyms: ["bar", "pub", "drinks", "drink", "cocktail", "beer", "craft beer", "brewery", "nightlife", "night out", "dop", "sundowner", "sundowners"]
+    included_types: ["bar", "pub", "cocktail_bar", "wine_bar", "brewery", "brewpub", "lounge_bar", "beer_garden"]
+    text_queries: ["cocktail bar", "craft beer"]
+    overture_categories: ["bar", "pub", "cocktail_bar", "beer_bar", "dive_bar", "speakeasy", "lounge", "brewery", "beer_garden"]
+    fsq_category_ids:
+      - "4bf58dd8d48988d116941735"  # Dining and Drinking > Bar
+      - "4bf58dd8d48988d11b941735"  # Dining and Drinking > Bar > Pub
+      - "4bf58dd8d48988d11e941735"  # Dining and Drinking > Bar > Cocktail Bar
+      - "56aa371ce4b08b9a8d57356c"  # Dining and Drinking > Bar > Beer Bar
+      - "4bf58dd8d48988d118941735"  # Dining and Drinking > Bar > Dive Bar
+      - "4bf58dd8d48988d1d4941735"  # Dining and Drinking > Bar > Speakeasy
+      - "4bf58dd8d48988d121941735"  # Dining and Drinking > Bar > Lounge
+      - "50327c8591d4c4b30a586d5d"  # Dining and Drinking > Brewery
+      - "4bf58dd8d48988d117941735"  # Dining and Drinking > Bar > Beer Garden
+    time_of_day: ["evening", "late_night"]
+    outdoor: false
+    typical_minutes: 90
+    slot_kinds: ["nightlife"]
+  rooftop:
+    description: "Rooftop bars and terraces with a view over the city."
+    synonyms: ["rooftop", "rooftops", "roof deck", "terrace", "skyline"]
+    included_types: ["bar", "cocktail_bar", "lounge_bar", "observation_deck"]
+    text_queries: ["rooftop bar"]
+    overture_categories: ["cocktail_bar", "lounge", "bar"]
+    fsq_category_ids:
+      - "5f2c224bb6d05514c70440a3"  # Dining and Drinking > Bar > Rooftop Bar
+      - "4bf58dd8d48988d133951735"  # Landmarks and Outdoors > Roof Deck
+    time_of_day: ["afternoon", "evening"]
+    outdoor: true
+    typical_minutes: 90
+    slot_kinds: ["nightlife", "activity"]
+  shopping:
+    description: "Shopping: malls, boutiques, design stores and local makers."
+    synonyms: ["shop", "shopping", "shops", "mall", "boutique", "boutiques", "fashion", "design store", "souvenirs"]
+    included_types: ["shopping_mall", "clothing_store", "gift_shop", "book_store"]
+    text_queries: ["design store", "local makers"]
+    overture_categories: ["shopping", "shopping_mall", "clothing_store", "fashion_boutique", "shopping_passage"]
+    fsq_category_ids:
+      - "4bf58dd8d48988d1fd941735"  # Retail > Shopping Mall
+      - "4bf58dd8d48988d104951735"  # Retail > Boutique
+      - "4bf58dd8d48988d103951735"  # Retail > Fashion Retail > Clothing Store
+      - "5744ccdfe4b0c0459246b4dc"  # Retail > Shopping Plaza
+    time_of_day: ["morning", "afternoon"]
+    outdoor: false
+    typical_minutes: 90
+    slot_kinds: ["activity"]
+  adventure:
+    description: "Adrenaline activities: ziplining, climbing, surfing, kayaking, diving and skydiving."
+    synonyms: ["adventure", "adrenaline", "extreme", "zipline", "ziplining", "abseil", "abseiling", "paragliding", "surf", "surfing", "kayak", "kayaking", "diving", "shark cage", "skydive", "skydiving", "bungee", "sandboarding", "climbing"]
+    included_types: ["adventure_sports_center", "off_roading_area"]
+    text_queries: ["adventure activities", "paragliding", "surf lessons"]
+    overture_categories: ["adventure_sports_center", "ziplining_center", "bungee_jumping_center", "rock_climbing_spot", "skydiving_center", "surfing_school", "scuba_diving_center", "rafting_kayaking_area", "canoe_and_kayak_hire_service"]
+    fsq_category_ids:
+      - "50328a4b91d4c4b30a586d6b"  # Landmarks and Outdoors > Rock Climbing Spot
+      - "4bf58dd8d48988d1e3941735"  # Landmarks and Outdoors > Surf Spot
+      - "63be6904847c3692a84b9c18"  # Sports and Recreation > Skydiving Center
+      - "63be6904847c3692a84b9c1d"  # Sports and Recreation > Water Sports > Canoe and Kayak Rental
+      - "63be6904847c3692a84b9c20"  # Sports and Recreation > Water Sports > Scuba Diving Instructor
+      - "503289d391d4c4b30a586d6a"  # Sports and Recreation > Gym and Studio > Climbing Gym
+    time_of_day: ["morning", "afternoon"]
+    outdoor: true
+    typical_minutes: 150
+    slot_kinds: ["activity"]
+  family:
+    description: "Family days out: zoos, aquariums, amusement parks and playgrounds for kids."
+    synonyms: ["family", "kids", "kid", "children", "child", "toddler", "family-friendly", "zoo", "aquarium", "theme park", "playground"]
+    included_types: ["zoo", "aquarium", "amusement_park", "water_park", "playground", "wildlife_park", "indoor_playground", "amusement_center"]
+    text_queries: ["family activities", "kids activities"]
+    overture_categories: ["zoo", "aquarium", "amusement_park", "water_park", "playground", "petting_zoo", "childrens_museum", "kids_recreation_and_party"]
+    fsq_category_ids:
+      - "4bf58dd8d48988d17b941735"  # Arts and Entertainment > Zoo
+      - "4fceea171983d5d06c3e9823"  # Arts and Entertainment > Aquarium
+      - "4bf58dd8d48988d182941735"  # Arts and Entertainment > Amusement Park
+      - "4bf58dd8d48988d193941735"  # Arts and Entertainment > Water Park
+      - "4bf58dd8d48988d1e7941735"  # Landmarks and Outdoors > Park > Playground
+    time_of_day: ["morning", "afternoon"]
+    outdoor: false
+    typical_minutes: 150
+    slot_kinds: ["activity"]
+  sport:
+    description: "Watching or playing sport: rugby, cricket and football stadiums, and golf."
+    synonyms: ["sport", "sports", "rugby", "cricket", "soccer", "football", "match", "stadium", "golf", "springboks", "bokke"]
+    included_types: ["stadium", "arena", "golf_course", "sports_complex", "sports_club"]
+    text_queries: ["stadium", "golf course"]
+    overture_categories: ["stadium", "arena", "cricket_ground", "rugby_stadium", "soccer_stadium", "golf_course"]
+    fsq_category_ids:
+      - "4bf58dd8d48988d184941735"  # Arts and Entertainment > Stadium
+      - "4bf58dd8d48988d18a941735"  # Sports and Recreation > Cricket Ground
+      - "56aa371be4b08b9a8d573556"  # Arts and Entertainment > Stadium > Rugby Stadium
+      - "4bf58dd8d48988d188941735"  # Arts and Entertainment > Stadium > Soccer Stadium
+      - "4bf58dd8d48988d1e6941735"  # Sports and Recreation > Golf > Golf Course
+    time_of_day: ["morning", "afternoon", "evening"]
+    outdoor: true
+    typical_minutes: 180
+    slot_kinds: ["activity"]
