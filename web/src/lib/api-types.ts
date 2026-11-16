@@ -167,8 +167,10 @@ export interface paths {
          * @description Generate an AI travel itinerary based on target destination, budget, and vibes.
          *     This does NOT save it to the DB immediately, allowing client previews first.
          *
-         *     Rate limited to 5 requests/minute per client: each call fans out to OpenAI and
+         *     Rate limited to 5 requests/minute per user: each call fans out to OpenAI and
          *     multiple Google Places lookups, making it the most expensive route in the API.
+         *     Each user can also start only OTB_PLANS_PER_USER_PER_DAY Plans a UTC day;
+         *     past that it's a 429 saying when the quota resets.
          */
         post: operations["generate_itinerary_api_v1_itineraries_generate_post"];
         delete?: never;
