@@ -17,6 +17,11 @@ updates:
     groups:
       web:
         patterns: ["*"]
+    ignore:
+      # openapi-typescript 7 (npm run gen:api) needs TypeScript 5; lift this
+      # once it accepts a newer major.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
