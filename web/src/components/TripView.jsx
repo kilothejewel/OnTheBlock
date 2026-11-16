@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import GoogleAttribution from './GoogleAttribution';
 import PlacePhoto from './PlacePhoto';
+import { fetchPlaceDetails } from '../lib/placeDetails';
 import { CATEGORY_ICONS } from '../lib/categoryIcons';
 import {
   BUDGET_LABELS, PERIODS, buildDays, cleanLocation, costLabel, isDemoPlaceId, isGooglePlace, mapsUrl, money, placeCategory, stopCategory,
@@ -13,17 +14,20 @@ import {
 /* ------------------------------------------------------------------ */
 /* One stop on the timeline                                            */
 /* ------------------------------------------------------------------ */
-function StopCard({ item, open, onToggle, currency }) {
+function StopCard({ item, open, onToggle, currency, details }) {
   const category = stopCategory(item);
   const Icon = CATEGORY_ICONS[category];
-  const location = cleanLocation(item.location);
+  // A Stop saved with only its place ID gets its name and address from Google (#29).
+  const location = cleanLocation(item.location) || details?.name || '';
+  const address = item.address || details?.address;
   const title = location || item.activity;
   const showActivity = location && item.activity && item.activity !== location;
   const detailsId = `stop-details-${item._key}`;
 
   return (
     <article className="card stop hover-zoom">
-      <PlacePhoto category={category} seed={`${title}-${item.time}`} src={item.photo_url} placeId={item.google_place_id} iconSize={44}>
+      {/* The real photo only once the Stop is opened, so a Plan doesn't fetch one per Stop (#29). */}
+      <PlacePhoto category={category} seed={`${title}-${item.time}`} src={item.photo_url} placeId={open ? item.google_place_id : undefined} iconSize={44}>
         <span className="time-chip">{item.time}</span>
         {Icon && <span className="icon-chip" aria-hidden="true"><Icon size={16} /></span>}
       </PlacePhoto>
@@ -37,10 +41,10 @@ function StopCard({ item, open, onToggle, currency }) {
           <span className="stop__cost" aria-label={`Estimated cost ${costLabel(item, currency)}`}>{costLabel(item, currency)}</span>
         </div>
 
-        {item.address ? (
+        {address ? (
           <p className="stop__meta">
             <MapPin size={14} aria-hidden="true" style={{ flexShrink: 0 }} />
-            <span>{item.address}</span>
+            <span>{address}</span>
             {item.verified && (
               <span className="stop__verified"><BadgeCheck size={14} aria-hidden="true" /> Verified place</span>
             )}
@@ -64,7 +68,7 @@ function StopCard({ item, open, onToggle, currency }) {
           )}
           <a
             className="btn btn--accent-outline"
-            href={mapsUrl({ name: location || item.activity, address: item.address, placeId: item.google_place_id })}
+            href={mapsUrl({ name: location || item.activity, address, placeId: item.google_place_id })}
             target="_blank"
             rel="noreferrer"
           >
@@ -173,6 +177,19 @@ export default function TripView({
   const [openKeys, setOpenKeys] = useState(() => new Set());
   const [sheet, setSheet] = useState(null); // { placeId } when open
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // place id -> display details, fetched once for the whole Plan (one batched request).
+  const [details, setDetails] = useState(() => new Map());
+  const placeIds = useMemo(
+    () => [...new Set((itinerary.items || []).map((i) => i.google_place_id).filter((id) => isGooglePlace(id)))],
+    [itinerary],
+  );
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all(placeIds.map((id) => fetchPlaceDetails(id).then((d) => [id, d]))).then((pairs) => {
+      if (!cancelled) setDetails(new Map(pairs.filter(([, d]) => d)));
+    });
+    return () => { cancelled = true; };
+  }, [placeIds]);
 
   const safeIdx = Math.min(dayIdx, days.length - 1);
   const current = days[safeIdx];
@@ -303,7 +320,7 @@ export default function TripView({
               <div className="timeline__body">
                 <h2 className="timeline__label">{group.name}</h2>
                 {group.items.map((item) => (
-                  <StopCard key={item._key} item={item} currency={currency} open={openKeys.has(item._key)} onToggle={() => toggle(item._key)} />
+                  <StopCard key={item._key} item={item} currency={currency} details={details.get(item.google_place_id)} open={openKeys.has(item._key)} onToggle={() => toggle(item._key)} />
                 ))}
               </div>
             </div>

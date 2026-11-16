@@ -28,6 +28,13 @@ SEARCH_FIELD_MASK = ",".join(
     )
 )
 
+# Display details for saved Plans and places (#29): Place Details **Pro** SKU
+# fields only (5,000 free a month). Rating, hours and price are Enterprise,
+# kept for the live check of final Stops (#93). A test fails on any other field.
+DETAILS_PRO_FIELDS = ("id", "displayName", "formattedAddress", "location", "types", "googleMapsUri")
+DETAILS_FIELD_MASK = ",".join(DETAILS_PRO_FIELDS)
+MAX_DETAILS_IDS = 20
+
 # Places API (New) returns price level as an enum; the app uses 0-4.
 PRICE_LEVELS = {
     "PRICE_LEVEL_FREE": 0,
@@ -164,7 +171,46 @@ class GooglePlacesService:
         )
         return in_budget[:max_results]
 
-    async def get_photo(self, place_id: str) -> Optional[Dict[str, Optional[str]]]:
+    async def get_details(self, place_ids: List[str], db=None, pool: str = "users") -> List[Dict[str, Any]]:
+        """
+        Display details for up to 20 place IDs, in the order given, duplicates
+        once. Demo IDs get Demo data (labelled); without a key, or when the
+        quota guard refuses (#121), a place gets our catalogue's name and Area
+        with details_available false, and Google isn't called. Nothing is
+        cached: only place IDs may be stored (Google terms).
+        """
+        from app.services.quota import quota
+
+        unique = list(dict.fromkeys(place_ids))
+        results: Dict[str, Dict[str, Any]] = {}
+        for place_id in unique:
+            if place_id.startswith("mock_"):
+                results[place_id] = _demo_details(place_id)
+                continue
+            if not self.live or not PLACE_ID_RE.match(place_id) or not quota.take("google.details_pro", pool=pool):
+                results[place_id] = _catalogue_details(db, place_id)
+                continue
+            try:
+                data = await self._request("GET", f"places/{place_id}", field_mask=DETAILS_FIELD_MASK)
+            except PlacesError:
+                results[place_id] = _catalogue_details(db, place_id)
+                continue
+            location = data.get("location") or {}
+            results[place_id] = {
+                "google_place_id": place_id,
+                "name": (data.get("displayName") or {}).get("text"),
+                "address": data.get("formattedAddress"),
+                "latitude": location.get("latitude"),
+                "longitude": location.get("longitude"),
+                "types": data.get("types") or [],
+                "maps_url": data.get("googleMapsUri"),
+                "area": None,
+                "source": "google",
+                "details_available": True,
+            }
+        return [results[place_id] for place_id in unique]
+
+    async def get_photo(self, place_id: str, pool: str = "users") -> Optional[Dict[str, Optional[str]]]:
         """
         URL and author credit for a place's main photo, or None when there is
         no photo (or no API key). Results are cached for an hour.
@@ -176,14 +222,20 @@ class GooglePlacesService:
         if cached and cached[0] > time.monotonic():
             return cached[1]
 
+        from app.services.quota import quota
+
         photo = self._photo_refs.get(place_id)
         if photo is None:
+            if not quota.take("google.details_pro", pool=pool):
+                return None
             details = await self._request("GET", f"places/{place_id}", field_mask="photos")
             photos = details.get("photos") or []
             photo = photos[0] if photos else None
 
         result = None
         if photo and photo.get("name"):
+            if not quota.take("google.photos", pool=pool):
+                return None
             media = await self._request(
                 "GET",
                 f"{photo['name']}/media",
@@ -205,6 +257,41 @@ class GooglePlacesService:
         if key not in cache and len(cache) >= CACHE_LIMIT:
             cache.pop(next(iter(cache)))
         cache[key] = value
+
+
+def _demo_details(place_id: str) -> Dict[str, Any]:
+    """A Demo place's details (mock_<city>_<n>), always labelled as Demo data."""
+    from app.core.cities import CITIES
+    from app.services.demo_places import demo_places
+
+    match = re.fullmatch(r"mock_(.+)_(\d+)", place_id)
+    city = CITIES.get(match.group(1)) if match else None
+    place = next((p for p in demo_places(city) if p["google_place_id"] == place_id), None) if city else None
+    return {
+        "google_place_id": place_id, "name": place["name"] if place else None,
+        "address": place["address"] if place else None, "latitude": None, "longitude": None,
+        "types": [t.strip() for t in place["types"].split(",")] if place else [], "maps_url": None,
+        "area": None, "source": "demo", "details_available": place is not None,
+    }
+
+
+def _catalogue_details(db, place_id: str) -> Dict[str, Any]:
+    """What our own catalogue knows about a Google place ID: its name and Area, never Google's fields."""
+    from app.models.place import Place
+
+    found = None
+    if db is not None:
+        try:
+            row = db.query(Place).filter(Place.google_place_id == place_id).first()
+            found = (row.name, row.area_id, row.lat, row.lng) if row else None
+        except Exception:  # the catalogue is a fallback; an outage means "unknown"
+            db.rollback()
+    name, area, lat, lng = found or (None, None, None, None)
+    return {
+        "google_place_id": place_id, "name": name, "address": None, "latitude": lat, "longitude": lng,
+        "types": [], "maps_url": None, "area": area, "source": "catalogue" if found else "unknown",
+        "details_available": False,
+    }
 
 
 places_service = GooglePlacesService()

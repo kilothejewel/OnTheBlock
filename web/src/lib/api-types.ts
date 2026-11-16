@@ -289,6 +289,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/places": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Places
+         * @description Display details for the places of a saved Plan or Saved places, in one
+         *     request: name, address, location and types (Place Details Pro). No rating,
+         *     hours or price; no photo (that's /places/{id}/photo, when a Stop is opened).
+         *     Quota refused or Google down: our catalogue's name and Area instead.
+         */
+        get: operations["get_places_api_v1_places_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/places/{place_id}/photo": {
         parameters: {
             query?: never;
@@ -689,6 +712,40 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /**
+         * PlaceDetails
+         * @description What a saved Plan or place shows for a place ID (#29). From Google when
+         *     `source` is "google"; otherwise from our catalogue ("catalogue") or Demo
+         *     data ("demo"), with `details_available` false when Google wasn't asked.
+         */
+        PlaceDetails: {
+            /** Google Place Id */
+            google_place_id: string;
+            /** Name */
+            name?: string | null;
+            /** Address */
+            address?: string | null;
+            /** Latitude */
+            latitude?: number | null;
+            /** Longitude */
+            longitude?: number | null;
+            /**
+             * Types
+             * @default []
+             */
+            types?: string[];
+            /** Maps Url */
+            maps_url?: string | null;
+            /** Area */
+            area?: string | null;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "google" | "catalogue" | "demo" | "unknown";
+            /** Details Available */
+            details_available: boolean;
         };
         /** PlacePhoto */
         PlacePhoto: {
@@ -1322,6 +1379,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_places_api_v1_places_get: {
+        parameters: {
+            query: {
+                /** @description Comma-separated Google place IDs, up to 20 */
+                ids: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceDetails"][];
+                };
             };
             /** @description Validation Error */
             422: {
