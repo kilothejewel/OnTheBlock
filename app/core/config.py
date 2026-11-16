@@ -90,6 +90,9 @@ class Settings(BaseSettings):
         "guests": {"google.details_enterprise": 150, "google.details_pro": 300, "google.photos": 150},  # #125
     }
 
+    #Briefs (app/schemas/brief.py): the most a Brief may budget, per currency.
+    BUDGET_MAX: Dict[str, int] = {"ZAR": 50_000, "USD": 3_000, "GBP": 2_500, "JPY": 450_000}
+
     #Per-user limits (app/core/rate_limit.py, app/services/plan_quota.py)
     PLANS_PER_USER_PER_DAY: int = 5  # new Plans a signed-in user can start per UTC day
     GUEST_PLANS_PER_DAY: int = 2  # the lower daily quota for guest users (#125)

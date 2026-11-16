@@ -8,8 +8,12 @@ On the Block helps people discover places in a city and plan a day or night out 
 One generated outing in one city: an ordered set of Stops for a single Day out or Night out.
 _Avoid_: Itinerary, trip (for a single outing)
 
+**Brief**:
+Everything someone wants from a Plan, gathered over a chat: city, Date, Mode, Area, party size, Budget amount, Interests, things to include or avoid, transport, dietary needs, access and pace (`app/schemas/brief.py`). Each chat message changes it with a patch.
+_Avoid_: Request, query, preferences
+
 **Mode**:
-Whether a Plan is a Day out or a Night out.
+Whether a Plan is a Day out, a Night out or a Full day.
 _Avoid_: Vibe, nightlife flag
 
 **Day out**:
@@ -18,12 +22,15 @@ A Plan that runs through the daytime, from morning into the evening.
 **Night out**:
 A Plan that runs through the evening and into the night.
 
+**Full day**:
+A Plan that runs from the morning through the evening and into the night: a Day out and a Night out in one.
+
 **Area**:
 A neighbourhood within a city that a Plan stays inside, such as Shoreditch, Shibuya or Maboneng.
 _Avoid_: District, zone, region
 
 **Vibes**:
-Optional free-text taste a user gives a Plan, such as "art, vegan, rooftop". It shapes which Places are picked, never the Mode.
+Superseded by Interests in the chat planner. Optional free-text taste the old form planner took, such as "art, vegan, rooftop"; still shown on older Plans.
 _Avoid_: Preferences, tags
 
 **Interest**:
@@ -33,9 +40,13 @@ _Avoid_: Category, tag, activity type
 **Date**:
 The calendar day a Plan is for. Opening hours are checked against it.
 
+**Budget amount**:
+How much a user wants to spend, in the city's currency (rands in South Africa), per person or in total for the party. Part of the Brief.
+_Avoid_: Budget tier, price range
+
 **Budget tier**:
-How much a user wants to spend, as $ (cheap), $$ (moderate) or $$$ (luxury).
-_Avoid_: Price range, budget amount
+Superseded by the Budget amount in the chat planner. How much a user wanted to spend on the old form planner, as $ (cheap), $$ (moderate) or $$$ (luxury); still shown on older Plans.
+_Avoid_: Price range
 
 **Stop**:
 One Place at one time within a Plan, with a per-person cost estimate.

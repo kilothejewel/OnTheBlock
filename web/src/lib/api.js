@@ -10,6 +10,8 @@
 /** @typedef {Schemas['GeneratedItinerary']} GeneratedPlan  POST /itineraries/generate */
 /** @typedef {Schemas['ItineraryCreate']} PlanToSave  POST /itineraries/ */
 /** @typedef {Schemas['ItineraryResponse']} SavedPlan  A Plan in Trips */
+/** @typedef {Schemas['Brief']} Brief  What someone wants from a Plan (GLOSSARY) */
+/** @typedef {Schemas['BriefPatch']} BriefPatch  A change to a Brief */
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/v1';
 
