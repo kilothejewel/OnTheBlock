@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -16,8 +17,9 @@ class UserLogin(BaseModel):
 
 class UserResponse(BaseModel):
     id: int
-    username: str
-    email: EmailStr
+    username: Optional[str] = None  # empty for a guest
+    email: Optional[EmailStr] = None
+    is_guest: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -26,3 +28,5 @@ class UserResponse(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    is_guest: bool = False
+    claimed_chats: int = 0  # chats kept from a guest session on sign-up or log-in (#125)

@@ -43,7 +43,16 @@ async def database_unavailable_handler(request: Request, exc: Exception) -> JSON
     return unavailable_response("database_unavailable", "We can't reach our database right now. Please try again in a moment.")
 
 
+async def account_required_handler(request: Request, exc) -> JSONResponse:
+    from app.core.security import ACCOUNT_REQUIRED_BODY
+
+    return JSONResponse(status_code=401, content={**ACCOUNT_REQUIRED_BODY, "detail": ACCOUNT_REQUIRED_BODY["message"]})
+
+
 def install_error_handlers(app) -> None:
+    from app.core.security import AccountRequired
+
+    app.add_exception_handler(AccountRequired, account_required_handler)
     app.add_exception_handler(ServiceUnavailable, service_unavailable_handler)
     app.add_exception_handler(OperationalError, database_unavailable_handler)
     app.add_exception_handler(InterfaceError, database_unavailable_handler)

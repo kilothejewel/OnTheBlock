@@ -17,6 +17,9 @@ export interface paths {
          * Register
          * @description Register a new user. Enforces unique email + username, stores a bcrypt hash of
          *     the password, and returns a JWT immediately (auto-login on register).
+         *
+         *     Sent with a guest token, the guest becomes the account in place (same user
+         *     id), so everything they made as a guest stays theirs; `claimed_chats` says how many chats.
          */
         post: operations["register_api_v1_auth_register_post"];
         delete?: never;
@@ -36,9 +39,33 @@ export interface paths {
         put?: never;
         /**
          * Login
-         * @description Verify credentials (email or username + password) and return a JWT.
+         * @description Verify credentials (email or username + password) and return a JWT. Sent
+         *     with a guest token, the guest's chats and today's Plan counts move to the
+         *     account and the guest is removed.
          */
         post: operations["login_api_v1_auth_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/guest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Guest Session
+         * @description Start using the app without an account: a guest session with no email,
+         *     name or password (#125). The token lasts 30 days. At most
+         *     OTB_GUEST_SESSIONS_PER_IP_DAY new guests a day per IP.
+         */
+        post: operations["create_guest_session_api_v1_auth_guest_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -54,7 +81,7 @@ export interface paths {
         };
         /**
          * Read Current User
-         * @description Return the authenticated user's profile.
+         * @description Return the signed-in user's profile, or a guest's (no email or username).
          */
         get: operations["read_current_user_api_v1_auth_me_get"];
         put?: never;
@@ -227,6 +254,7 @@ export interface paths {
         /**
          * Generate Itinerary
          * @description Generate an AI travel itinerary based on target destination, budget, and vibes.
+         *     Guests can plan too (#125), under their own lower limits.
          *     This does NOT save it to the DB immediately, allowing client previews first.
          *
          *     Rate limited to 5 requests/minute per user: each call fans out to OpenAI and
@@ -571,6 +599,11 @@ export interface components {
              */
             demo?: boolean;
         };
+        /** GuestRequest */
+        GuestRequest: {
+            /** Turnstile Token */
+            turnstile_token?: string | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -864,6 +897,16 @@ export interface components {
              * @default bearer
              */
             token_type?: string;
+            /**
+             * Is Guest
+             * @default false
+             */
+            is_guest?: boolean;
+            /**
+             * Claimed Chats
+             * @default 0
+             */
+            claimed_chats?: number;
         };
         /** UserCreate */
         UserCreate: {
@@ -892,12 +935,14 @@ export interface components {
             /** Id */
             id: number;
             /** Username */
-            username: string;
+            username?: string | null;
+            /** Email */
+            email?: string | null;
             /**
-             * Email
-             * Format: email
+             * Is Guest
+             * @default false
              */
-            email: string;
+            is_guest?: boolean;
             /**
              * Created At
              * Format: date-time
@@ -974,6 +1019,39 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Token"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_guest_session_api_v1_auth_guest_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["GuestRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -11,7 +11,7 @@
           "auth"
         ],
         "summary": "Register",
-        "description": "Register a new user. Enforces unique email + username, stores a bcrypt hash of\nthe password, and returns a JWT immediately (auto-login on register).",
+        "description": "Register a new user. Enforces unique email + username, stores a bcrypt hash of\nthe password, and returns a JWT immediately (auto-login on register).\n\nSent with a guest token, the guest becomes the account in place (same user\nid), so everything they made as a guest stays theirs; `claimed_chats` says how many chats.",
         "operationId": "register_api_v1_auth_register_post",
         "requestBody": {
           "content": {
@@ -44,7 +44,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/auth/login": {
@@ -53,7 +58,7 @@
           "auth"
         ],
         "summary": "Login",
-        "description": "Verify credentials (email or username + password) and return a JWT.",
+        "description": "Verify credentials (email or username + password) and return a JWT. Sent\nwith a guest token, the guest's chats and today's Plan counts move to the\naccount and the guest is removed.",
         "operationId": "login_api_v1_auth_login_post",
         "requestBody": {
           "content": {
@@ -86,6 +91,60 @@
               }
             }
           }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/guest": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Create Guest Session",
+        "description": "Start using the app without an account: a guest session with no email,\nname or password (#125). The token lasts 30 days. At most\nOTB_GUEST_SESSIONS_PER_IP_DAY new guests a day per IP.",
+        "operationId": "create_guest_session_api_v1_auth_guest_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/GuestRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -95,7 +154,7 @@
           "auth"
         ],
         "summary": "Read Current User",
-        "description": "Return the authenticated user's profile.",
+        "description": "Return the signed-in user's profile, or a guest's (no email or username).",
         "operationId": "read_current_user_api_v1_auth_me_get",
         "responses": {
           "200": {
@@ -472,7 +531,7 @@
           "itineraries"
         ],
         "summary": "Generate Itinerary",
-        "description": "Generate an AI travel itinerary based on target destination, budget, and vibes.\nThis does NOT save it to the DB immediately, allowing client previews first.\n\nRate limited to 5 requests/minute per user: each call fans out to OpenAI and\nmultiple Google Places lookups, making it the most expensive route in the API.\nEach user can also start only OTB_PLANS_PER_USER_PER_DAY Plans a UTC day;\npast that it's a 429 saying when the quota resets.",
+        "description": "Generate an AI travel itinerary based on target destination, budget, and vibes.\nGuests can plan too (#125), under their own lower limits.\nThis does NOT save it to the DB immediately, allowing client previews first.\n\nRate limited to 5 requests/minute per user: each call fans out to OpenAI and\nmultiple Google Places lookups, making it the most expensive route in the API.\nEach user can also start only OTB_PLANS_PER_USER_PER_DAY Plans a UTC day;\npast that it's a 429 saying when the quota resets.",
         "operationId": "generate_itinerary_api_v1_itineraries_generate_post",
         "requestBody": {
           "content": {
@@ -1405,6 +1464,23 @@
         "title": "GeneratedItinerary",
         "description": "A Plan from /itineraries/generate: not saved yet."
       },
+      "GuestRequest": {
+        "properties": {
+          "turnstile_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Turnstile Token"
+          }
+        },
+        "type": "object",
+        "title": "GuestRequest"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2270,6 +2346,16 @@
             "type": "string",
             "title": "Token Type",
             "default": "bearer"
+          },
+          "is_guest": {
+            "type": "boolean",
+            "title": "Is Guest",
+            "default": false
+          },
+          "claimed_chats": {
+            "type": "integer",
+            "title": "Claimed Chats",
+            "default": 0
           }
         },
         "type": "object",
@@ -2332,13 +2418,32 @@
             "title": "Id"
           },
           "username": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Username"
           },
           "email": {
-            "type": "string",
-            "format": "email",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Email"
+          },
+          "is_guest": {
+            "type": "boolean",
+            "title": "Is Guest",
+            "default": false
           },
           "created_at": {
             "type": "string",
@@ -2349,8 +2454,6 @@
         "type": "object",
         "required": [
           "id",
-          "username",
-          "email",
           "created_at"
         ],
         "title": "UserResponse"

@@ -150,13 +150,40 @@ def test_requests_with_no_token_never_reach_google_or_an_llm(client, outbound_ht
     assert llm_calls == []
 
 
-def test_every_route_that_can_call_google_or_an_llm_needs_a_signed_in_user():
-    """Routes that reach Google or an LLM must depend on get_current_user."""
-    from fastapi.routing import APIRoute
-    from app.core.security import get_current_user
+def api_routes():
+    """(path, methods, dependency callables) for every API route, including those in included routers.
 
-    costly = {"/api/v1/itineraries/generate", "/api/v1/hotspots/recommend", "/api/v1/places/{place_id}/photo"}
+    FastAPI 0.16x keeps included routers as their own objects instead of copying
+    their routes onto app.routes, so walk both.
+    """
+    from fastapi.routing import APIRoute
+
+    def deps(dependant):
+        for dep in dependant.dependencies:
+            yield dep.call
+            yield from deps(dep)
+
     for route in app.routes:
-        if isinstance(route, APIRoute) and route.path in costly:
-            deps = {d.call for d in route.dependant.dependencies}
-            assert get_current_user in deps, route.path
+        contexts = route.effective_route_contexts() if hasattr(route, "effective_route_contexts") else [route] if isinstance(route, APIRoute) else []
+        for ctx in contexts:
+            yield ctx.path, set(ctx.methods or ()), set(deps(ctx.dependant))
+
+
+def test_every_route_that_can_call_google_or_an_llm_needs_a_token():
+    """Routes that reach Google or an LLM need an account or a guest session (#43, #125)."""
+    from app.core.security import get_actor
+
+    costly = {"/api/v1/itineraries/generate", "/api/v1/hotspots/recommend", "/api/v1/places/{place_id}/photo", "/api/v1/places"}
+    found = {path: d for path, _, d in api_routes() if path in costly}
+    assert set(found) == costly  # the walk really sees them
+    for path, dependencies in found.items():
+        assert get_actor in dependencies, path
+
+
+def test_trips_and_saved_places_are_for_accounts_only():
+    from app.core.security import require_account
+
+    account_only = [(path, d) for path, _, d in api_routes() if path.startswith(("/api/v1/itineraries", "/api/v1/hotspots")) and path not in {"/api/v1/itineraries/generate", "/api/v1/hotspots/recommend"}]
+    assert len(account_only) >= 6
+    for path, dependencies in account_only:
+        assert require_account in dependencies, path
