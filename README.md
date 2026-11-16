@@ -7,14 +7,16 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
 </p>
 
-<p align="center"><b>Discover places and plan a day or night out on a budget.</b><br>
+<p align="center"><b>Plan a day or night out in South Africa, in rands.</b><br>
 <a href="https://ontheblock.netlify.app">Try it live →</a></p>
 
 <!-- Screenshot: add docs/screenshot.png and uncomment.
 <p align="center"><img src="docs/screenshot.png" width="800" alt="On the Block planning a night out in Cape Town"></p>
 -->
 
-On the Block finds real places in South Africa (Cape Town, Johannesburg, Durban, Pretoria and Stellenbosch), plus Miami, London and Tokyo, and turns them into a Plan: a short run of Stops near each other, priced in local currency for your Budget tier. Save the places you like and keep your Plans in Trips.
+On the Block is a planner for a day or night out in South Africa. Tell it what you're after ("a hike, then sundowners and a jol, under R1,000") and it builds a Plan: a short run of real Stops near each other, on the city's clock, with costs in rands. Save the places you like and keep your Plans in Trips.
+
+Cape Town comes first, then Johannesburg, Durban, Pretoria and Stellenbosch ([ADR 0005](docs/adr/0005-south-africa-first.md)). Miami, London and Tokyo are available as beta. The chat planner is being built now; the [roadmap](docs/roadmap.md) shows where it stands, and today's site still uses the original form planner.
 
 ## Quickstart
 
@@ -31,7 +33,7 @@ Open http://localhost:5273. Full setup, including real data and tests, is in [CO
 
 ## Stack
 
-A **FastAPI** + SQLAlchemy API (Postgres, or SQLite locally) behind a **Vite + React** site, using the **Google Places API (New)** for places and photos and **OpenAI** to write Plans. Deployed on Render, Neon and Netlify, with GitHub Actions CI on every pull request.
+A **FastAPI** + SQLAlchemy API (Postgres, or SQLite locally) behind a **Vite + React** site, using the **Google Places API (New)** for places and photos. v2 runs on free tiers only: free-tier LLMs (Gemini, then Groq) behind a quota guard and open data for the places catalogue ([ADR 0007](docs/adr/0007-data-sources-and-licences.md)); the original form planner still uses OpenAI until it's retired. Deployed on Render, Neon and Netlify, with GitHub Actions CI on every pull request.
 
 ## Docs
 
