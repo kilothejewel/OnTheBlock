@@ -33,12 +33,27 @@ Some code names still predate the [glossary](../GLOSSARY.md): `Itinerary` is a P
 
 ### How a Plan is generated
 
+The chat planner is a fixed pipeline ([ADR 0006](adr/0006-planner-pipeline.md)), being built in SA2 (#78):
+
+```
+chat message
+  → intake (LLM, strict JSON; rules fallback)   → BriefPatch + next action
+  → Brief (typed: city, Date, Mode, Area, Interests, budget in rands)
+  → skeleton (code)                             → Slots with times, from Mode, Interests and sunset
+  → retrieve + score (code)                     → candidates per Slot from the city's open-data catalogue
+  → compose (LLM, strict JSON)                  → one candidate key per Slot from an enum, plus copy
+  → live check + validate + repair (code)       → Google Place Details for the final Stops only; budget, hours, travel, safety
+  → stream (Server-Sent Events)                 → the Plan, as it's built
+```
+
+The LLM runs only in intake and compose, behind one `LLMClient` (Gemini free tier, then Groq free tier, then a rules client). It never sets costs or times, and it can't invent a place: compose picks from keys we offered. Every Google and LLM call asks the free-quota guard first.
+
+**Today** the live site still runs the v1 form planner (`app/services/itinerary.py`), which the pipeline replaces (#118):
+
 1. The web app sends the city, Budget tier and Vibes.
 2. The Plan generator asks Google Places for candidate Places for each Slot (breakfast, lunch, dinner…), avoiding repeats.
 3. OpenAI picks from those candidates and writes the Plan as JSON.
-4. Every Stop is checked against the candidates. A Stop whose place ID wasn't offered is treated as made up.
-
-The [roadmap](roadmap.md) changes this flow in step 2 (Mode, Area, Date, opening hours) and step 3 (structured outputs, no silent fallback).
+4. Every Stop is checked against the candidates. A Stop whose place ID wasn't offered is kept with an "[Unverified]" prefix.
 
 ### Demo data
 
