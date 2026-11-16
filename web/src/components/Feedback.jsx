@@ -1,4 +1,4 @@
-import { CircleCheck, TriangleAlert, CircleX, Info, RefreshCw } from 'lucide-react';
+import { CircleCheck, TriangleAlert, CircleX, Info, LoaderCircle, RefreshCw } from 'lucide-react';
 
 const TOAST_ICONS = { success: CircleCheck, warning: TriangleAlert, error: CircleX, info: Info };
 
@@ -9,6 +9,18 @@ export function Toast({ notification }) {
     <div className={`toast toast--${notification.type}`} role="status" aria-live="polite">
       <Icon className="toast__icon" size={20} aria-hidden="true" />
       {notification.message}
+    </div>
+  );
+}
+
+// Shown at the top of every screen while a request is slow: the free API host
+// sleeps when idle and takes up to a minute to wake (#27).
+export function WakingBanner({ show }) {
+  if (!show) return null;
+  return (
+    <div className="waking-banner" role="status" aria-live="polite">
+      <LoaderCircle size={16} className="spinner" aria-hidden="true" />
+      Waking up the server… The free host sleeps when it's quiet, so this can take up to a minute.
     </div>
   );
 }

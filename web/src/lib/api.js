@@ -34,6 +34,34 @@ export class ApiError extends Error {
   }
 }
 
+// The free host sleeps when idle and takes up to a minute to wake (#27), so
+// any request still waiting after SLOW_REQUEST_MS counts as "waking up" until
+// it answers. Components read it with useServerWaking().
+export const SLOW_REQUEST_MS = 3000;
+let slowRequests = 0;
+const slowListeners = new Set();
+
+/** @param {number} delta */
+function changeSlowRequests(delta) {
+  const before = slowRequests > 0;
+  slowRequests = Math.max(0, slowRequests + delta);
+  if (before !== slowRequests > 0) slowListeners.forEach((listener) => listener());
+}
+
+/** Whether any request has been waiting longer than SLOW_REQUEST_MS. */
+export function isServerSlow() {
+  return slowRequests > 0;
+}
+
+/**
+ * Calls `listener` when that changes; returns the unsubscribe function.
+ * @param {() => void} listener
+ */
+export function subscribeServerSlow(listener) {
+  slowListeners.add(listener);
+  return () => slowListeners.delete(listener);
+}
+
 /**
  * Sends a JSON request and returns the parsed body (null for 204).
  * Throws ApiError with the server's `detail` message when it is a readable string.
@@ -48,6 +76,11 @@ export async function apiFetch(path, { token, method = 'GET', body } = {}) {
   if (body !== undefined) headers['Content-Type'] = 'application/json';
 
   let res;
+  let flaggedSlow = false;
+  const slowTimer = setTimeout(() => {
+    flaggedSlow = true;
+    changeSlowRequests(1);
+  }, SLOW_REQUEST_MS);
   try {
     res = await fetch(`${API_BASE}${path}`, {
       method,
@@ -56,6 +89,9 @@ export async function apiFetch(path, { token, method = 'GET', body } = {}) {
     });
   } catch {
     throw new ApiError("We couldn't reach the server. Check your connection and try again.", 0);
+  } finally {
+    clearTimeout(slowTimer);
+    if (flaggedSlow) changeSlowRequests(-1);
   }
 
   if (res.status === 204) return null;
