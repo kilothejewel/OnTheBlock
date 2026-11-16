@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from app.core.config import settings
+from app.core.errors import install_error_handlers
 from app.core.http_client import close_http_client, open_http_client
 from app.core.observability import REQUEST_ID_HEADER, RequestContextMiddleware, configure_error_tracking, configure_logging
 from app.core.rate_limit import limiter, rate_limit_exceeded_handler
@@ -38,6 +39,7 @@ app = FastAPI(
 # limits declared with @limiter.limit(...) on the expensive endpoints.
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+install_error_handlers(app)
 app.add_middleware(SlowAPIMiddleware)
 
 # Configure CORS. Origins are read from the OTB_FRONTEND_ORIGINS setting

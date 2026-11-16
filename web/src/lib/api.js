@@ -23,10 +23,14 @@ export class ApiError extends Error {
   /**
    * @param {string} message
    * @param {number} status
+   * @param {{ code?: string, retryable?: boolean }} [extra]
    */
-  constructor(message, status) {
+  constructor(message, status, { code = '', retryable = false } = {}) {
     super(message);
     this.status = status; // 0 means the server could not be reached
+    this.code = code; // e.g. "places_unavailable" on a 503
+    // Worth offering a Retry: a 503 says so, and an unreachable server may wake up.
+    this.retryable = retryable || status === 0 || status === 503;
   }
 }
 
@@ -51,15 +55,16 @@ export async function apiFetch(path, { token, method = 'GET', body } = {}) {
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
-    throw new ApiError("We couldn't reach the server. Check that the API is running and try again.", 0);
+    throw new ApiError("We couldn't reach the server. Check your connection and try again.", 0);
   }
 
   if (res.status === 204) return null;
   const data = await res.json().catch(() => null);
   if (!res.ok) {
     // Validation errors (422) carry a list, not a sentence; callers supply a fallback.
-    const detail = typeof data?.detail === 'string' ? data.detail : '';
-    throw new ApiError(detail, res.status);
+    // A 503 carries {code, message, retryable} (app/core/errors.py).
+    const detail = typeof data?.message === 'string' ? data.message : typeof data?.detail === 'string' ? data.detail : '';
+    throw new ApiError(detail, res.status, { code: data?.code, retryable: data?.retryable === true });
   }
   return data;
 }
