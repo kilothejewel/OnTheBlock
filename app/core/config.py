@@ -68,6 +68,10 @@ class Settings(BaseSettings):
         "guests": {"google.details_enterprise": 150, "google.details_pro": 300, "google.photos": 150},  # #125
     }
 
+    #Per-user limits (app/core/rate_limit.py, app/services/plan_quota.py)
+    PLANS_PER_USER_PER_DAY: int = 5  # new Plans a signed-in user can start per UTC day
+    GUEST_PLANS_PER_DAY: int = 2  # the lower daily quota for guest users (#125)
+
     #Logging and error tracking (app/core/observability.py)
     LOG_FORMAT: Literal["text", "json"] = "text"  # json on Render: one JSON object per line
     LOG_LEVEL: str = "INFO"

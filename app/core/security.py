@@ -46,6 +46,15 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
+def user_id_from_token(token: str) -> Optional[int]:
+    """The user id in a valid, unexpired access token, or None."""
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        return int(payload["sub"])
+    except (jwt.InvalidTokenError, KeyError, TypeError, ValueError):
+        return None
+
+
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db),
@@ -62,17 +71,8 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    try:
-        payload = jwt.decode(
-            credentials.credentials,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM],
-        )
-        subject = payload.get("sub")
-        if subject is None:
-            raise credentials_exception
-        user_id = int(subject)
-    except (jwt.InvalidTokenError, ValueError):
+    user_id = user_id_from_token(credentials.credentials)
+    if user_id is None:
         raise credentials_exception
 
     user = db.query(User).filter(User.id == user_id).first()

@@ -4,11 +4,28 @@ from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
-# Rate limiting is keyed by client IP. A generous default limit protects every
-# endpoint from abuse; expensive routes opt into stricter per-route limits via
-# the @limiter.limit(...) decorator.
+from app.core.security import user_id_from_token
+
+
+def user_or_ip(request: Request) -> str:
+    """
+    Who a request counts against: the signed-in user (from a valid bearer
+    token), else the client IP. Many phones share one carrier IP, so
+    signed-in users each get their own limits.
+    """
+    auth = request.headers.get("authorization", "")
+    if auth[:7].lower() == "bearer ":
+        user_id = user_id_from_token(auth[7:].strip())
+        if user_id is not None:
+            return f"user:{user_id}"
+    return f"ip:{get_remote_address(request)}"
+
+
+# A generous default limit protects every endpoint from abuse; expensive routes
+# opt into stricter per-route limits via the @limiter.limit(...) decorator.
+# Both are per user when signed in, per IP otherwise (user_or_ip).
 limiter = Limiter(
-    key_func=get_remote_address,
+    key_func=user_or_ip,
     default_limits=["100/minute"],
     headers_enabled=True,  # emit X-RateLimit-* and Retry-After headers
 )
