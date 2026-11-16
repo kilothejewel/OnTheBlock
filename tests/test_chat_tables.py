@@ -77,7 +77,8 @@ def test_no_google_display_field_can_be_stored_in_a_plan_version(field):
 
 def test_a_stored_plan_version_holds_ids_and_our_own_fields_only(db_session, user):
     chat = a_chat(db_session, user)
-    stored = json.loads(db_session.execute(text("SELECT data FROM plan_versions")).scalar())
+    raw = db_session.execute(text("SELECT data FROM plan_versions")).scalar()
+    stored = raw if isinstance(raw, dict) else json.loads(raw)  # Postgres returns JSON decoded, SQLite as text
     keys = set(stored) | {k for stop in stored["stops"] for k in stop}
     assert not keys & set(GOOGLE_DISPLAY_FIELDS)
     assert stored["stops"][0]["google_place_id"] == "ChIJtruth00001"
