@@ -303,6 +303,45 @@ a.sr-only:focus {
 /* Single-choice chips (city picker) use the brand colour, unlike the vibe toggles */
 .chip--choice[aria-checked='true'] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
 
+/* City search box (#89): a combobox; the list floats over what's below */
+.city-search { position: relative; width: 100%; max-width: 420px; }
+.city-search__field { position: relative; }
+.city-search__icon, .city-search__chevron {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  color: var(--text-3); pointer-events: none;
+}
+.city-search__icon { left: 14px; }
+.city-search__chevron { right: 14px; }
+.city-search__input { padding-left: 44px; padding-right: 40px; text-overflow: ellipsis; }
+.city-search__list {
+  position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + 6px);
+  max-height: min(320px, 50vh); overflow-y: auto;
+  margin: 0; padding: 6px; list-style: none;
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  background: var(--surface); box-shadow: var(--shadow-raised);
+}
+.city-search__list[hidden] { display: none; }
+.city-search__option {
+  display: flex; align-items: center; gap: 8px;
+  min-height: 44px; padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.city-search__option[aria-selected='true'] { background: var(--surface-2); }
+.city-search__option[data-current] .city-search__name { color: var(--accent); }
+.city-search__name { font-weight: 600; color: var(--text); }
+.city-search__name { flex-shrink: 0; }
+.city-search__province { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; color: var(--text-3); }
+.city-search__beta { margin-left: auto; flex-shrink: 0; }
+.city-search__empty {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+  margin-top: 8px; padding: 12px 14px;
+  border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text-2);
+  font-size: 14px;
+}
+.city-search__empty p { margin: 0; }
+.city-search__error { color: var(--danger); }
+
 .demo-note {
   display: flex; gap: 8px; align-items: flex-start;
   padding: 10px 14px; margin-bottom: 16px;

@@ -6,5 +6,6 @@ from app.models.quota import QuotaUsage
 from app.models.plan_quota import PlanQuotaUsage
 from app.models.place import Place
 from app.models.chat import BriefVersion, Chat, ChatMessage, PlanVersion
+from app.models.city_request import CityRequest
 
-__all__ = ["Base", "User", "Hotspot", "user_hotspots", "Itinerary", "QuotaUsage", "PlanQuotaUsage", "Place", "Chat", "ChatMessage", "BriefVersion", "PlanVersion"]
+__all__ = ["Base", "User", "Hotspot", "user_hotspots", "Itinerary", "QuotaUsage", "PlanQuotaUsage", "Place", "Chat", "ChatMessage", "BriefVersion", "PlanVersion", "CityRequest"]

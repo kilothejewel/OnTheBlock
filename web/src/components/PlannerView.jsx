@@ -9,7 +9,7 @@ function splitPrefs(value) {
   return value.split(',').map((s) => s.trim()).filter(Boolean);
 }
 
-export function PlannerForm({ city, onCityChange, budget, setBudget, duration, setDuration, preferences, setPreferences, onSubmit, generating }) {
+export function PlannerForm({ city, onCityChange, onRequestCity, budget, setBudget, duration, setDuration, preferences, setPreferences, onSubmit, generating }) {
   const prefs = splitPrefs(preferences);
   const hasVibe = (v) => prefs.some((p) => p.toLowerCase() === v);
   const toggleVibe = (v) => {
@@ -28,7 +28,7 @@ export function PlannerForm({ city, onCityChange, budget, setBudget, duration, s
       <form className="card card--pad planner__form" onSubmit={onSubmit}>
         <div className="field">
           <span className="field__label" id="plan-city-label">Where?</span>
-          <CityPicker value={city} onChange={onCityChange} labelledBy="plan-city-label" />
+          <CityPicker value={city} onChange={onCityChange} onRequestCity={onRequestCity} labelledBy="plan-city-label" />
         </div>
 
         <div className="planner__row">

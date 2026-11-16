@@ -9,6 +9,7 @@
 #   hidden (no new Plans or searches; saved Plans still open).
 # areas_file: the city's Areas (#35), relative to app/data. May not exist yet.
 # usd_rate: rough units per US dollar, only for Demo data cost estimates.
+# aliases: other names the city search box matches (#89), e.g. Jozi.
 #
 # Order matters within each group: the picker lists South African cities
 # first (live, then beta), then international ones.
@@ -26,6 +27,7 @@ cities:
     bounds: {sw: {lat: -34.36, lng: 18.30}, ne: {lat: -33.47, lng: 19.00}}
     launch_status: beta
     areas_file: areas/cape-town.yaml
+    aliases: [Mother City, Kaapstad, CPT]
     usd_rate: 18
 
   - slug: johannesburg
@@ -40,6 +42,7 @@ cities:
     bounds: {sw: {lat: -26.5263, lng: 27.7143}, ne: {lat: -25.9028, lng: 28.2145}}
     launch_status: beta
     areas_file: areas/johannesburg.yaml
+    aliases: [Joburg, Jozi, Jhb, Egoli]
     usd_rate: 18
 
   - slug: durban
@@ -54,6 +57,7 @@ cities:
     bounds: {sw: {lat: -30.2686, lng: 30.5600}, ne: {lat: -29.5011, lng: 31.1858}}
     launch_status: beta
     areas_file: areas/durban.yaml
+    aliases: [eThekwini, Durbs]
     usd_rate: 18
 
   - slug: pretoria
@@ -68,6 +72,7 @@ cities:
     bounds: {sw: {lat: -26.0781, lng: 27.8904}, ne: {lat: -25.1096, lng: 29.0984}}
     launch_status: beta
     areas_file: areas/pretoria.yaml
+    aliases: [Tshwane, PTA]
     usd_rate: 18
 
   - slug: stellenbosch
@@ -82,6 +87,7 @@ cities:
     bounds: {sw: {lat: -34.0634, lng: 18.7083}, ne: {lat: -33.7934, lng: 19.2438}}
     launch_status: beta
     areas_file: areas/stellenbosch.yaml
+    aliases: [Stellies]
     usd_rate: 18
 
   - slug: miami

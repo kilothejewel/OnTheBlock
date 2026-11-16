@@ -334,6 +334,53 @@
         }
       }
     },
+    "/api/v1/city-requests": {
+      "post": {
+        "tags": [
+          "cities"
+        ],
+        "summary": "Request City",
+        "description": "Ask for a city we don't cover yet, from the city search box (#89). For\naccounts and guests, at most 5 a day (UTC) per user.",
+        "operationId": "request_city_api_v1_city_requests_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CityRequestIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CityRequestOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/hotspots/recommend": {
       "get": {
         "tags": [
@@ -1377,6 +1424,13 @@
           "status": {
             "type": "string",
             "title": "Status"
+          },
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Aliases"
           }
         },
         "type": "object",
@@ -1386,9 +1440,49 @@
           "province",
           "country_code",
           "currency",
-          "status"
+          "status",
+          "aliases"
         ],
         "title": "CityOut"
+      },
+      "CityRequestIn": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 80,
+            "title": "Text",
+            "description": "What the person typed into the city search box."
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "CityRequestIn"
+      },
+      "CityRequestOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "text",
+          "created_at"
+        ],
+        "title": "CityRequestOut"
       },
       "GeneratedItinerary": {
         "properties": {

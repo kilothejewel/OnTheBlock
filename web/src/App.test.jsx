@@ -191,15 +191,17 @@ describe('cities', () => {
   it('come from GET /cities, South Africa first', async () => {
     renderAt('/plan', SIGNED_OUT);
     await heading('Plan a day out on your budget');
-    const chips = await screen.findAllByRole('radio', { name: /Cape Town|Durban|London/ });
-    expect(chips.map((c) => c.textContent)).toEqual(['Cape Town', 'Durban', 'London']);
-    expect(screen.getByRole('radio', { name: 'Cape Town' }).getAttribute('aria-checked')).toBe('true');
+    const box = screen.getByRole('combobox', { name: 'Where?' });
+    await vi.waitFor(() => expect(box.value).toBe('Cape Town'));
+    fireEvent.focus(box);
+    const options = screen.getAllByRole('option');
+    expect(options.map((o) => o.querySelector('.city-search__name').textContent)).toEqual(['Cape Town', 'Durban', 'London']);
   });
 
   it('fall back to the first listed city when the remembered one is no longer listed', async () => {
     localStorage.setItem('otb_city', 'miami');
     renderAt('/plan', SIGNED_OUT);
-    const capeTown = await screen.findByRole('radio', { name: 'Cape Town' });
-    expect(capeTown.getAttribute('aria-checked')).toBe('true');
+    const box = screen.getByRole('combobox', { name: 'Where?' });
+    await vi.waitFor(() => expect(box.value).toBe('Cape Town'));
   });
 });

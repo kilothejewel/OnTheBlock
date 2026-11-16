@@ -19,7 +19,7 @@ function SkeletonCard() {
   );
 }
 
-export default function DiscoverView({ city, onCityChange, searchQuery, setSearchQuery, onSearch, searchLoading, searchError, onRetry, places, savedHotspots, onToggleSave }) {
+export default function DiscoverView({ city, onCityChange, onRequestCity, searchQuery, setSearchQuery, onSearch, searchLoading, searchError, onRetry, places, savedHotspots, onToggleSave }) {
   const savedIds = new Set(savedHotspots.map((h) => h.google_place_id));
   const cityName = cityBySlug(useCities(), city)?.name;
   const isDemo = places.length > 0 && places.every((p) => isDemoPlaceId(p.google_place_id));
@@ -35,7 +35,7 @@ export default function DiscoverView({ city, onCityChange, searchQuery, setSearc
       <form className="search-hero" onSubmit={onSearch} role="search">
         <div className="field">
           <span className="field__label" id="discover-city-label">City</span>
-          <CityPicker value={city} onChange={onCityChange} labelledBy="discover-city-label" />
+          <CityPicker value={city} onChange={onCityChange} onRequestCity={onRequestCity} labelledBy="discover-city-label" />
         </div>
         <label htmlFor="discover-search" className="sr-only">Search places</label>
         <div className="search-bar">

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from './api';
 
-/** @typedef {{ slug: string, name: string, province: string, country_code: string, currency: string, status: string }} City */
+/** @typedef {{ slug: string, name: string, province: string, country_code: string, currency: string, status: string, aliases?: string[] }} City */
 
 export const DEFAULT_CITY = 'cape-town';
 
@@ -44,6 +44,29 @@ export function useCities() {
     return () => { cancelled = true; };
   }, []);
   return cities;
+}
+
+// Lower case without accents, so "Joburg", "joburg" and "jöburg" all match.
+function fold(text) {
+  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
+
+// The cities whose name, province or an alias contains `query`, names that
+// start with it first. An empty query lists every city in the API's order.
+export function matchCities(cities, query) {
+  const q = fold(query || '');
+  if (!q) return cities;
+  const scored = [];
+  cities.forEach((city, index) => {
+    const names = [city.name, ...(city.aliases || [])].map(fold);
+    let score = null;
+    if (names.some((n) => n.startsWith(q))) score = 0;
+    else if (names.some((n) => n.split(/[\s-]+/).some((w) => w.startsWith(q)))) score = 1;
+    else if (names.some((n) => n.includes(q))) score = 2;
+    else if (fold(city.province).includes(q)) score = 3;
+    if (score !== null) scored.push({ city, score, index });
+  });
+  return scored.sort((a, b) => a.score - b.score || a.index - b.index).map((s) => s.city);
 }
 
 export function cityBySlug(cities, slug) {

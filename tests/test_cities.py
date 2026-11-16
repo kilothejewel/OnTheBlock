@@ -113,6 +113,7 @@ class TestCitiesEndpoint:
         assert cities[0] == {
             "slug": "cape-town", "name": "Cape Town", "province": "Western Cape",
             "country_code": "ZA", "currency": "ZAR", "status": "beta",
+            "aliases": ["Mother City", "Kaapstad", "CPT"],
         }
         assert all(c["status"] == "beta" for c in cities if c["country_code"] != "ZA")
 
