@@ -2280,6 +2280,52 @@
               }
             ],
             "title": "Price Level"
+          },
+          "cost_min": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Min",
+            "description": "Per person, whole units of the Plan's currency; null when unknown"
+          },
+          "cost_max": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Max"
+          },
+          "cost_basis": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "fee_table",
+                  "google_price_range",
+                  "google_price_level",
+                  "category_band",
+                  "default",
+                  "beta_estimate",
+                  "unknown"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Basis",
+            "description": "Where the range came from (#96). beta_estimate: a rough estimate; unknown: price not confirmed"
           }
         },
         "additionalProperties": true,
@@ -2421,6 +2467,52 @@
               }
             ],
             "title": "Price Level"
+          },
+          "cost_min": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Min",
+            "description": "Per person, whole units of the Plan's currency; null when unknown"
+          },
+          "cost_max": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Max"
+          },
+          "cost_basis": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "fee_table",
+                  "google_price_range",
+                  "google_price_level",
+                  "category_band",
+                  "default",
+                  "beta_estimate",
+                  "unknown"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Basis",
+            "description": "Where the range came from (#96). beta_estimate: a rough estimate; unknown: price not confirmed"
           }
         },
         "type": "object",

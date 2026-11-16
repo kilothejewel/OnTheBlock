@@ -9,6 +9,7 @@ from app.core.errors import ServiceUnavailable
 from app.core.observability import count_call
 from app.schemas.itinerary import ItineraryGenerate
 from app.schemas.llm import Candidate, SkeletonSlot
+from app.services.costs import estimate_stop
 from app.services.demo_places import demo_slot
 from app.services.interests import wants_slot
 from app.services.llm import llm
@@ -16,8 +17,9 @@ from app.services.places import places_service
 
 log = logging.getLogger(__name__)
 
-# Demo itinerary: per-person costs in USD by slot and budget, converted to the
-# city's currency with its approximate rate.
+# Demo data only: per-person costs in USD by slot and budget, converted to the
+# city's currency with its approximate rate. Live Plans use the cost model
+# (app/services/costs.py, #96).
 DEMO_COSTS_USD = {
     "breakfast": {"$": 8, "$$": 15, "$$$": 30},
     "activity": {"$": 0, "$$": 15, "$$$": 30},
@@ -259,12 +261,18 @@ class ItineraryService:
         for stop in composed.stops:
             day, category = slot_meta[stop.slot_id]
             place = by_key[stop.candidate_key]
+            # The place came from Google in this request, so its price fields
+            # count as confirmed; they're used for the estimate, never stored.
+            cost = estimate_stop({**place, "confirmed": True}, category, city)
             items.append({
                 "day": day,
                 "time": times.get(category, "12:00 PM"),
                 "activity": DEMO_COPY.get(category, ("Explore", ""))[0],
                 "description": stop.description,
-                "estimated_cost": local_cost(DEMO_COSTS_USD.get(category, DEMO_COSTS_USD["lunch"])[params.budget], city),
+                "estimated_cost": cost.max or 0,
+                "cost_min": cost.min,
+                "cost_max": cost.max,
+                "cost_basis": cost.basis,
                 "location": place.get("name"),
                 "address": place.get("address"),
                 "google_place_id": place.get("google_place_id"),

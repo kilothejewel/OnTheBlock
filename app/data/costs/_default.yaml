@@ -1,10 +1,13 @@
-# Cost data for cities without their own file yet. Every value is unknown on
-# purpose: the cost model (#96) then shows "price not confirmed" rather than a
-# made-up range. Johannesburg, Durban and Pretoria each get their own file
-# before they launch (separate issues), like cape-town.yaml.
+# Cost data for cities without their own file yet (Miami, London, Tokyo, and
+# South African cities before their data lands), in US dollars per person,
+# converted with each city's usd_rate. The cost model (#96) marks these
+# `beta_estimate`, so the app says "rough estimate". Every value is unknown on
+# purpose until it has a source: the app then says "price not confirmed"
+# rather than showing a made-up range. Johannesburg, Durban and Pretoria each
+# get their own file before they launch (separate issues), like cape-town.yaml.
 
 city: _default
-currency: null
+currency: USD
 fees: []
 price_level_bands:
   todo: "Unknown: no curated data for this city yet"

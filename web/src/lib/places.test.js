@@ -64,6 +64,19 @@ describe('costLabel', () => {
     expect(costLabel({ estimated_cost: 120 }, 'ZAR')).toMatch(/^R\s?120$/);
   });
 
+  it('shows the cost model range (#96)', () => {
+    const r = (s) => s.replace(/\s/g, '');
+    expect(r(costLabel({ estimated_cost: 220, cost_min: 120, cost_max: 220, cost_basis: 'google_price_level' }, 'ZAR'))).toBe('R120–R220');
+    expect(r(costLabel({ estimated_cost: 480, cost_min: 480, cost_max: 480, cost_basis: 'fee_table' }, 'ZAR'))).toBe('R480');
+    expect(r(costLabel({ estimated_cost: 120, cost_min: 0, cost_max: 120, cost_basis: 'category_band' }, 'ZAR'))).toBe('UptoR120');
+    expect(costLabel({ estimated_cost: 0, cost_min: 0, cost_max: 0, cost_basis: 'default' }, 'ZAR')).toBe('Free');
+  });
+
+  it('says when a cost is a rough estimate or not confirmed', () => {
+    expect(costLabel({ estimated_cost: 40, cost_min: 20, cost_max: 40, cost_basis: 'beta_estimate' }, 'USD')).toBe('$20–$40 (rough estimate)');
+    expect(costLabel({ estimated_cost: 0, cost_min: null, cost_max: null, cost_basis: 'unknown', price_level: 2 }, 'ZAR')).toBe('Price not confirmed');
+  });
+
   it('falls back to the price level, then a dash', () => {
     expect(costLabel({ price_level: 2 }, 'USD')).toBe('$$');
     expect(costLabel({}, 'USD')).toBe('—');
