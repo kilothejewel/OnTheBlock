@@ -231,6 +231,7 @@ class ItineraryService:
         validated_items = []
         for item in items:
             enriched_item = dict(item)
+            enriched_item["estimated_cost"] = whole_cost(item.get("estimated_cost"))
             place_id = item.get("google_place_id")
 
             if place_id is None:
@@ -304,5 +305,13 @@ class ItineraryService:
             "items": items,
             "demo": True,
         }
+
+def whole_cost(value: Any) -> int:
+    """A cost from the model as a whole, non-negative amount (0 when it isn't a number)."""
+    try:
+        return max(0, round(float(value)))
+    except (TypeError, ValueError):
+        return 0
+
 
 itinerary_service = ItineraryService()

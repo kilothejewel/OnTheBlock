@@ -70,6 +70,16 @@ To run the API tests against Postgres too, point `OTB_TEST_DATABASE_URL` at a te
 
 Tests should exercise behaviour through the API (see `tests/test_itineraries.py` and `tests/test_places.py`), never call real external services, and pass without any API keys.
 
+## Changing the API's shape
+
+The web app's types come from the API's OpenAPI schema. After changing a schema in `app/schemas/` or a route's `response_model`, regenerate them with the virtualenv active:
+
+```bash
+cd web && npm run gen:api   # writes web/openapi.json and web/src/lib/api-types.ts
+```
+
+Commit both files. CI regenerates them and fails if they differ, then type-checks `web/src/lib/api.js` against them (`npm run check:api`).
+
 ## Adding a migration
 
 The schema belongs to the migrations in `migrations/versions/`; the app never creates or alters tables itself. To change it:

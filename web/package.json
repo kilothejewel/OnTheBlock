@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "gen:api": "python ../scripts/export_openapi.py && npm run gen:api:types",
+    "gen:api:types": "openapi-typescript openapi.json -o src/lib/api-types.ts --default-non-nullable false",
+    "check:api": "tsc -p tsconfig.api.json"
   },
   "dependencies": {
     "lucide-react": "^1.64.0",
@@ -23,6 +26,8 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.7",
     "globals": "^17.13.0",
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3",
     "vite": "^8.3.5"
   }
 }
