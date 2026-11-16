@@ -89,8 +89,9 @@ export function sumCost(items) {
 }
 
 // "09:00 AM" -> minutes since midnight (unknown -> 9am so it sorts early)
-export function minutesOf(time = '') {
-  const m = /^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i.exec(time.trim());
+// (a Stop's time can be null from the API)
+export function minutesOf(time) {
+  const m = /^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i.exec(String(time ?? '').trim());
   if (!m) return 9 * 60;
   let h = parseInt(m[1], 10) % 12;
   if (m[3] && m[3].toUpperCase() === 'PM') h += 12;
