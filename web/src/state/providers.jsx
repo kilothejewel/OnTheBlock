@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Toast } from '../components/Feedback';
+import { Toast, WakingBanner } from '../components/Feedback';
 import { apiFetch } from '../lib/api';
+import { useServerWaking } from '../lib/useServerWaking';
 import { cityBySlug, rememberCity, storedCity, useCities } from '../lib/cities';
 import { PERIODS } from '../lib/places';
 import { LibraryContext, PlanningContext, SessionContext, ToastContext, useLibrary, useSession, useToast } from './contexts';
 
 function ToastProvider({ children }) {
+  const waking = useServerWaking();
   const [notification, setNotification] = useState(null);
   const timer = useRef(null);
 
@@ -25,6 +27,7 @@ function ToastProvider({ children }) {
   const value = useMemo(() => ({ notify, reportError }), [notify, reportError]);
   return (
     <ToastContext.Provider value={value}>
+      <WakingBanner show={waking} />
       {children}
       <Toast notification={notification} />
     </ToastContext.Provider>

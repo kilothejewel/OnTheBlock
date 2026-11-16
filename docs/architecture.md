@@ -79,3 +79,22 @@ Vite + React 19 with plain CSS and `lucide-react` icons. `VITE_API_BASE` sets wh
 - **API:** Render deploys `main` only after CI passes (`render.yaml`), using Neon Postgres. Its start command runs `python -m app.migrate` and starts the API only if that succeeds, so a failed migration fails the deploy and the previous version keeps serving. Secrets are set in Render, never in git.
 - **Web:** Netlify builds a preview for each PR and deploys `main` to https://ontheblock.netlify.app.
 - **Dependabot** opens grouped monthly update PRs for Python, npm and GitHub Actions.
+
+### Hosting on free tiers
+
+v2 runs on free tiers only (ADR 0005), so hosting costs **USD 0 a month**. Limits as published on 16 November 2026:
+
+| | Render free web service (today) | Google Cloud Run free allowance |
+| --- | --- | --- |
+| Cost | USD 0; no payment card needed | USD 0 within the allowance; **needs a billing account** |
+| Idle | Spins down after **15 minutes** without traffic | Scales to zero between requests |
+| Waking | About **one minute** for the first request | A few seconds (cold start) |
+| Monthly allowance | **750 instance hours** per workspace; past that, every free service is suspended until the next month | 2 million requests, 180,000 vCPU-seconds and 360,000 GiB-seconds (priced at us-central1 rates; other regions use the allowance up faster) |
+| Past the allowance | Suspended, never billed for instance hours; extra outbound bandwidth is billed if a card is on file | **Billed**, unless the budget alert and kill function from #44 turn billing off |
+| Region | Frankfurt is the closest to South Africa | `africa-south1` (Johannesburg) is available |
+
+The database is Neon's free Postgres, which also suspends after a few idle minutes, so the first query after a quiet spell is slower.
+
+**What users see:** any request still waiting after 3 seconds shows "Waking up the server…" at the top of the screen until it answers (`web/src/lib/api.js`). The chat page (#103) keeps the user's message while it waits, so nothing is lost.
+
+> **TODO(cameron): choose the host.** Render free needs no card but makes the first visitor after 15 idle minutes wait about a minute. Cloud Run wakes in seconds and can run in Johannesburg, but sits on a billing account, so it only stays free with #44's budget alert and kill function. `render.yaml` stays as it is until this is decided.
