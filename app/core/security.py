@@ -3,8 +3,8 @@ from typing import Optional
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
+import jwt
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -13,17 +13,27 @@ from app.models.user import User
 
 security = HTTPBearer()
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# bcrypt only reads the first 72 bytes of a password. passlib, which made the
+# hashes stored before #22, cut longer ones there silently; bcrypt 5 refuses
+# them, so cut them the same way to keep those hashes verifying.
+BCRYPT_MAX_BYTES = 72
+
+
+def _password_bytes(password: str) -> bytes:
+    return password.encode("utf-8")[:BCRYPT_MAX_BYTES]
 
 
 def get_password_hash(password: str) -> str:
-    """Hash a plaintext password using bcrypt."""
-    return pwd_context.hash(password)
+    """Hash a plaintext password with bcrypt (cost 12, as passlib used)."""
+    return bcrypt.hashpw(_password_bytes(password), bcrypt.gensalt(rounds=12)).decode("ascii")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Check a plaintext password against a stored bcrypt hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    """Check a plaintext password against a stored bcrypt hash. A malformed hash never matches."""
+    try:
+        return bcrypt.checkpw(_password_bytes(plain_password), hashed_password.encode("ascii"))
+    except (ValueError, UnicodeEncodeError):
+        return False
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -62,7 +72,7 @@ async def get_current_user(
         if subject is None:
             raise credentials_exception
         user_id = int(subject)
-    except (JWTError, ValueError):
+    except (jwt.InvalidTokenError, ValueError):
         raise credentials_exception
 
     user = db.query(User).filter(User.id == user_id).first()

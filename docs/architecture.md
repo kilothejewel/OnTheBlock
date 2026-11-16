@@ -42,7 +42,7 @@ Without `OTB_GOOGLE_PLACES_API_KEY` or `OTB_OPENAI_API_KEY`, the matching servic
 
 ### Auth and limits
 
-- Email or username plus password, hashed with bcrypt (passlib). Sessions are signed JWT bearer tokens (python-jose).
+- Email or username plus password, hashed with bcrypt. Sessions are signed JWT bearer tokens (PyJWT).
 - Rate limits per client IP with slowapi: 100 requests a minute by default, and stricter limits on endpoints that cost money (for example 5 a minute for generating a Plan).
 
 ### Database
