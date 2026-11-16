@@ -1,0 +1,58 @@
+name: Places catalogue
+
+# Builds a city's places catalogue from open data (scripts/catalogue/ingest.py,
+# #119). Run by hand for now; #112 adds the monthly schedule. Never on the API
+# host: it writes straight to the database in the DATABASE_URL secret.
+on:
+  workflow_dispatch:
+    inputs:
+      city:
+        description: City slug from app/data/cities.yaml
+        required: true
+        default: cape-town
+      fsq:
+        description: Foursquare OS Places parquet glob (needs the HF_TOKEN secret); leave empty for Overture only
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: catalogue-${{ inputs.city }}
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Migrate the database
+        run: python -m app.migrate
+        env:
+          OTB_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          OTB_SECRET_KEY: catalogue-job-only
+
+      - name: Ingest
+        run: |
+          python -m scripts.catalogue.ingest --city "${{ inputs.city }}" ${{ inputs.fsq && format('--fsq "{0}"', inputs.fsq) || '' }} --report catalogue-report.json
+        env:
+          OTB_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          OTB_SECRET_KEY: catalogue-job-only
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
+      - name: Keep the report
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalogue-report-${{ inputs.city }}
+          path: catalogue-report.json
