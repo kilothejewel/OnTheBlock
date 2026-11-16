@@ -1,13 +1,17 @@
 import asyncio
 import json
+import logging
 from typing import Dict, Any, List
 from openai import AsyncOpenAI
 from app.core.cities import City, get_city
 from app.core.config import settings
+from app.core.observability import count_call
 from app.schemas.itinerary import ItineraryGenerate
 from app.services.demo_places import demo_slot
 from app.services.interests import wants_slot
 from app.services.places import places_service
+
+log = logging.getLogger(__name__)
 
 # Demo itinerary: per-person costs in USD by slot and budget, converted to the
 # city's currency with its approximate rate.
@@ -91,7 +95,7 @@ class ItineraryService:
             day_used_ids: set[str] = set()
             for category, places in zip(categories, results):
                 if isinstance(places, Exception):
-                    print(f"Error fetching {category} candidates for day {day}: {places}")
+                    log.warning("candidate search failed", extra={"slot": category, "day": day, "error": str(places)})
                     day_candidates[category] = []
                     continue
 
@@ -167,6 +171,7 @@ class ItineraryService:
         """
 
         try:
+            count_call("llm.openai")
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -204,7 +209,7 @@ class ItineraryService:
             return itinerary_data
 
         except Exception as e:
-            print(f"Error calling OpenAI API: {e}")
+            log.warning("OpenAI call failed; using Demo data", extra={"error": str(e)})
             return self._get_demo_itinerary(params, city)
 
     def _validate_and_enrich_items(
@@ -239,10 +244,7 @@ class ItineraryService:
                 enriched_item["longitude"] = matched_candidate.get("longitude")
             else:
                 # Place ID not found in candidate lookup (hallucinated or misused ID)
-                print(
-                    f"Warning: Invalid place_id '{place_id}' for activity '{item.get('activity')}' "
-                    f"not found in candidate places."
-                )
+                log.warning("model returned a place ID it wasn't offered", extra={"activity": item.get("activity")})
                 enriched_item["google_place_id"] = None
                 enriched_item["verified"] = False
                 orig_location = item.get("location") or ""
@@ -254,7 +256,7 @@ class ItineraryService:
 
     def _get_demo_itinerary(self, params: ItineraryGenerate, city: City) -> Dict[str, Any]:
         """Demo itinerary from the city's demo places, used when OpenAI is not configured."""
-        print(f"Using demo data for an itinerary in {city.name}...")
+        log.info("planning with Demo data", extra={"city": city.slug})
 
         schedule = list(DEMO_DAY)
         if wants_slot(params.preferences, "nightlife"):

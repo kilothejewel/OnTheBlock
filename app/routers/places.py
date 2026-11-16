@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from app.core.rate_limit import limiter
@@ -5,6 +7,8 @@ from app.core.security import get_current_user
 from app.models.user import User
 from app.schemas.place import PlacePhoto
 from app.services.places import PlacesError, places_service
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/places", tags=["places"])
 
@@ -25,7 +29,7 @@ async def get_place_photo(
     try:
         photo = await places_service.get_photo(place_id)
     except PlacesError as e:
-        print(f"Photo lookup failed for {place_id}: {e}")
+        log.warning("photo lookup failed", extra={"place_id": place_id, "error": str(e)})
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Couldn't load the photo.")
     if photo is None or not photo.get("url"):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No photo for this place.")

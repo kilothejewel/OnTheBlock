@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy.orm import Session
 from typing import List
@@ -9,6 +11,8 @@ from app.models.user import User
 from app.models.hotspot import Hotspot
 from app.schemas.hotspot import HotspotCreate, HotspotResponse
 from app.services.places import PlacesError, places_service
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/hotspots", tags=["hotspots"])
 
@@ -29,7 +33,7 @@ async def recommend_hotspots(
     try:
         return await places_service.search_places(query, get_city(city))
     except PlacesError as e:
-        print(f"Places search failed: {e}")
+        log.warning("places search failed", extra={"city": city, "error": str(e)})
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Couldn't reach Google Places right now. Please try again.",

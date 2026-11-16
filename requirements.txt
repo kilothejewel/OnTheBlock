@@ -13,6 +13,7 @@ psycopg2-binary==2.9.13
 bcrypt==5.0.0
 PyJWT==2.15.1
 slowapi==0.1.10
+sentry-sdk[fastapi]==2.75.0  # error tracking, off unless OTB_SENTRY_DSN is set
 httpx==0.28.1
 PyYAML==6.0.3  # app/data/*.yaml
 tzdata==2026.6  # IANA time zones for zoneinfo; Windows has no system copy
