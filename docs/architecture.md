@@ -44,6 +44,7 @@ Without `OTB_GOOGLE_PLACES_API_KEY` or `OTB_OPENAI_API_KEY`, the matching servic
 
 - Email or username plus password, hashed with bcrypt. Sessions are signed JWT bearer tokens (PyJWT).
 - Rate limits per client IP with slowapi: 100 requests a minute by default, and stricter limits on endpoints that cost money (for example 5 a minute for generating a Plan).
+- Free-quota guard (`app/services/quota.py`): every Google and LLM call asks `quota.take(resource, pool=...)` first, and is skipped (the caller degrades) when the answer is no. Counts live in the `quota_usage` table, per UTC day for all pools and per UTC month for each pool (`users`, `guests`, `eval`), so every process shares them. Limits sit just under each free allowance and come from `OTB_QUOTA_LIMITS` and `OTB_QUOTA_POOL_CAPS`.
 
 ### Database
 
